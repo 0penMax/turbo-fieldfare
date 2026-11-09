@@ -184,6 +184,7 @@ public struct OpenAIChatRequest: Codable, Equatable, Sendable {
     public let logprobs: Bool?
     public let presencePenalty: Float?
     public let frequencyPenalty: Float?
+    public let thinking: Bool?
     /// Kept as raw JSON. Only `type` is ever read, because the rest of a
     /// `response_format` describes a schema this server cannot honour, and a
     /// value of any other shape has to reach the validator as a request error
@@ -191,7 +192,7 @@ public struct OpenAIChatRequest: Codable, Equatable, Sendable {
     public let responseFormat: JSONValue?
 
     enum CodingKeys: String, CodingKey {
-        case model, messages, stream, temperature, stop, seed, tools, n, logprobs
+        case model, messages, stream, temperature, stop, seed, tools, n, logprobs, thinking
         case streamOptions = "stream_options"
         case topP = "top_p"
         case maxTokens = "max_tokens"
@@ -325,6 +326,7 @@ public struct OpenAIChatRequest: Codable, Equatable, Sendable {
             Float.self, forKey: .presencePenalty)
         frequencyPenalty = try container.decodeIfPresent(
             Float.self, forKey: .frequencyPenalty)
+        thinking = try container.decodeIfPresent(Bool.self, forKey: .thinking)
         responseFormat = try container.decodeIfPresent(
             JSONValue.self, forKey: .responseFormat)
     }
