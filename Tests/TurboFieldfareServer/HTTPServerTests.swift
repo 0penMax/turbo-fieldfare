@@ -28,6 +28,22 @@ private actor ScriptedServerBackend: ServerInferenceBackend {
     }
 }
 
+private actor ReasoningServerBackend: ServerInferenceBackend {
+    func generate(
+        _ request: ValidatedChatRequest,
+        onEvent: @escaping @Sendable (ServerInferenceEvent) -> Void
+    ) async throws -> ServerCompletion {
+        onEvent(.reasoning("check the details"))
+        onEvent(.content("The answer is 42."))
+        return ServerCompletion(
+            content: "The answer is 42.",
+            reasoning: "check the details",
+            toolCalls: [],
+            finishReason: "stop",
+            usage: OpenAIUsage(promptTokens: 3, completionTokens: 8, totalTokens: 11))
+    }
+}
+
 private actor MultipleToolBackend: ServerInferenceBackend {
     func generate(
         _ request: ValidatedChatRequest,
@@ -331,6 +347,26 @@ struct HTTPServerTests {
         #expect(text.contains(#""cached_tokens":0"#))
         #expect(text.hasSuffix("data: [DONE]\n\n"))
 
+        try await server.shutdown()
+    }
+
+    @Test func nonStreamingReturnsReasoningSeparatelyFromContent() async throws {
+        let server = TurboFieldfareHTTPServer(
+            modelID: "test-model", queueLimit: 1, backend: ReasoningServerBackend())
+        let channel = try await server.start(port: 0)
+        let port = try #require(channel.localAddress?.port)
+        var request = URLRequest(
+            url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = Data(#"{"model":"test-model","messages":[{"role":"user","content":"hi"}],"thinking":true}"#.utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        #expect((response as? HTTPURLResponse)?.statusCode == 200)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let choices = try #require(object["choices"] as? [[String: Any]])
+        let message = try #require(choices[0]["message"] as? [String: Any])
+        #expect(message["content"] as? String == "The answer is 42.")
+        #expect(message["reasoning"] as? String == "check the details")
         try await server.shutdown()
     }
 
