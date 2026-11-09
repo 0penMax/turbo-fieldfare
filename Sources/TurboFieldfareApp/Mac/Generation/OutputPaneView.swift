@@ -62,7 +62,7 @@ struct OutputPaneView: View {
                 showsPrefillPlaceholder: model.isTranscriptTurnInFlight
                     && model.outputResponsePlainText.isEmpty,
                 runIdentity: model.runIdentity)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .topTrailing) {
                     if !model.isRunning && !model.outputResponsePlainText.isEmpty {
                         copyResponseButton
@@ -865,24 +865,6 @@ private struct IncrementalTranscriptView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func sizeThatFits(_ proposal: ProposedViewSize,
-                      nsView scrollView: NSScrollView,
-                      context: Context) -> CGSize? {
-        guard let textView = scrollView.documentView as? NSTextView,
-              let textContainer = textView.textContainer,
-              let layoutManager = textView.layoutManager else { return nil }
-        let width = proposal.width ?? scrollView.contentSize.width
-        guard width > 0 else { return nil }
-        textView.setFrameSize(NSSize(width: width, height: max(1, textView.frame.height)))
-        textView.layoutSubtreeIfNeeded()
-        layoutManager.ensureLayout(for: textContainer)
-        let contentHeight = ceil(
-            layoutManager.usedRect(for: textContainer).maxY
-                + textView.textContainerInset.height * 2 + 12)
-        let height = min(contentHeight, proposal.height ?? contentHeight)
-        return CGSize(width: width, height: max(1, height))
-    }
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = TranscriptScrollView()
