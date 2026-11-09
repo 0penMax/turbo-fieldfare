@@ -20,4 +20,11 @@ import TurboFieldfare
         var router = CLIOutputRouter(thinkingMode: .on)
         #expect(router.output(for: .content("answer")) == "answer")
     }
+
+    @Test func truncatedReasoningDoesNotInventAnAnswerSection() {
+        var router = CLIOutputRouter(thinkingMode: .on)
+        let partial = router.output(for: .reasoning("unfinished"))
+        #expect(partial == "\n[Reasoning]\nunfinished")
+        #expect(!partial.contains("[Answer]"))
+    }
 }
