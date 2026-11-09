@@ -15,6 +15,21 @@ struct OpenAIValidationTests {
         #expect(tokenizer.encode(rendered, addBOS: false).filter { $0 == tokenizer.endOfTurnID }.count == 3)
     }
 
+    @Test func thinkingRequestDefaultsOffAndAcceptsBooleanValues() throws {
+        func validate(_ json: String) throws -> ValidatedChatRequest {
+            let request = try JSONDecoder().decode(
+                OpenAIChatRequest.self, from: Data(json.utf8))
+            return try OpenAIRequestValidator.validate(request, modelID: "m")
+        }
+        let base = #"{"model":"m","messages":[{"role":"user","content":"Hi"}]}"#
+        #expect(try !validate(base).thinking)
+        #expect(try !validate(base.dropLast() + #", "thinking":false}"#).thinking)
+        #expect(try validate(base.dropLast() + #", "thinking":true}"#).thinking)
+        #expect(throws: DecodingError.self) {
+            try validate(base.dropLast() + #", "thinking":"yes"}"#)
+        }
+    }
+
     @Test func capturedOpenCodeInitialRequestValidates() throws {
         let request = try fixture("opencode-1.15.11-initial.json")
         let validated = try OpenAIRequestValidator.validate(

@@ -426,6 +426,7 @@ public struct ValidatedChatRequest: Sendable {
     public let tools: [GFTokenizer.FunctionDefinition]
     public let stream: Bool
     public let includeUsage: Bool
+    public let thinking: Bool
     public let generationConfig: GenerationConfig
     public let maximumCompletionTokens: Int
     /// Every staging directory this request's image files live in. The parser
@@ -443,7 +444,8 @@ public struct ValidatedChatRequest: Sendable {
         stream: Bool,
         includeUsage: Bool,
         generationConfig: GenerationConfig,
-        maximumCompletionTokens: Int
+        maximumCompletionTokens: Int,
+        thinking: Bool = false
     ) {
         self.messages = messages
         self.multimodalMessages = multimodalMessages
@@ -452,6 +454,7 @@ public struct ValidatedChatRequest: Sendable {
         self.tools = tools
         self.stream = stream
         self.includeUsage = includeUsage
+        self.thinking = thinking
         self.generationConfig = generationConfig
         self.maximumCompletionTokens = maximumCompletionTokens
         self.attachmentLeases = []
@@ -467,6 +470,7 @@ public struct ValidatedChatRequest: Sendable {
         includeUsage: Bool,
         generationConfig: GenerationConfig,
         maximumCompletionTokens: Int,
+        thinking: Bool = false,
         attachmentLeases: [ServerAttachmentLease]
     ) {
         self.messages = messages
@@ -476,6 +480,7 @@ public struct ValidatedChatRequest: Sendable {
         self.tools = tools
         self.stream = stream
         self.includeUsage = includeUsage
+        self.thinking = thinking
         self.generationConfig = generationConfig
         self.maximumCompletionTokens = maximumCompletionTokens
         self.attachmentLeases = attachmentLeases
@@ -624,6 +629,7 @@ public enum OpenAIRequestValidator {
                                     includeUsage: request.streamOptions?.includeUsage ?? false,
                                     generationConfig: config,
                                     maximumCompletionTokens: maximum,
+                                    thinking: request.thinking ?? false,
                                     attachmentLeases: validatedMessages.leases)
     }
 
