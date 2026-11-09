@@ -12,6 +12,7 @@ public struct AppChatTurn: Identifiable, Equatable, Sendable {
     public var generatedTokens: Int?
     public var stopReason: AppStopReason?
     public var thinking: String?
+    public var generationSeconds: TimeInterval?
     /// What this turn put into the KV, in the model's own IDs.
     ///
     /// A user turn carries the continuation-encoded prompt it contributed; an
@@ -26,7 +27,8 @@ public struct AppChatTurn: Identifiable, Equatable, Sendable {
                 images: [ChatImage] = [],
                 promptTokens: Int? = nil, cachedTokens: Int? = nil,
                 generatedTokens: Int? = nil, stopReason: AppStopReason? = nil,
-                tokenIDs: [Int32]? = nil, thinking: String? = nil) {
+                tokenIDs: [Int32]? = nil, thinking: String? = nil,
+                generationSeconds: TimeInterval? = nil) {
         self.id = id
         self.role = role
         self.text = text
@@ -37,6 +39,7 @@ public struct AppChatTurn: Identifiable, Equatable, Sendable {
         self.stopReason = stopReason
         self.tokenIDs = tokenIDs
         self.thinking = thinking
+        self.generationSeconds = generationSeconds
     }
 }
 
@@ -238,7 +241,8 @@ public struct AppConversation: Equatable, Sendable {
     /// including a turn the user stopped: that one ends at a token boundary
     /// with its partial reply committed to the KV.
     public mutating func completeTurn(text: String, diagnostics: AppDiagnostics?,
-                                      thinking: String? = nil) {
+                                      thinking: String? = nil,
+                                      generationSeconds: TimeInterval? = nil) {
         guard let pendingUserTurnID,
               let userIndex = turns.firstIndex(where: { $0.id == pendingUserTurnID }) else {
             return
@@ -251,7 +255,8 @@ public struct AppConversation: Equatable, Sendable {
             generatedTokens: diagnostics?.generatedTokens,
             stopReason: diagnostics?.stopReason,
             tokenIDs: diagnostics?.generatedTokenIDs,
-            thinking: thinking?.isEmpty == true ? nil : thinking))
+            thinking: thinking?.isEmpty == true ? nil : thinking,
+            generationSeconds: generationSeconds))
         committedTurns += 1
         boundaryTokenIDs = diagnostics?.boundaryTokenIDs ?? []
         boundaryNeedsReplay = diagnostics?.boundaryNeedsReplay ?? false

@@ -2955,11 +2955,13 @@ public final class AppModel {
         materializeServiceTranscript()
         self.diagnostics = diagnostics
         endGenerationTimer(as: diagnostics.stopReason == .cancelled ? .stopped : .completed)
+        let generationSeconds = generationElapsedSeconds()
         let userText = outputPromptText
         let assistantText = outputText
         conversation.completeTurn(
             text: outputText, diagnostics: diagnostics,
-            thinking: reasoningText.isEmpty ? nil : reasoningText)
+            thinking: reasoningText.isEmpty ? nil : reasoningText,
+            generationSeconds: generationSeconds)
         // Written here and nowhere else: this is the one path that commits a
         // turn to the KV, so it is the one path where the transcript on disk
         // and the model's context can be made to say the same thing. A turn
@@ -2968,6 +2970,7 @@ public final class AppModel {
         enqueueCompletedTurnPersistence(
             userText: userText, assistantText: assistantText,
             reasoningText: reasoningText,
+            generationSeconds: generationSeconds,
             diagnostics: diagnostics)
         finishTerminalRun()
     }

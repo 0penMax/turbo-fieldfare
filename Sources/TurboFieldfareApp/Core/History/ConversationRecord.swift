@@ -194,6 +194,7 @@ public struct ConversationTurnRecord: Codable, Equatable, Sendable {
     /// Kept for display and structurally excluded from replay: the tokens above
     /// already contain whatever the model emitted, thought spans included.
     public var thinking: String?
+    public var generationSeconds: TimeInterval?
     public var promptTokens: Int?
     public var cachedTokens: Int?
     public var generatedTokens: Int?
@@ -220,6 +221,7 @@ public struct ConversationTurnRecord: Codable, Equatable, Sendable {
     public init(id: UUID = UUID(), role: Role, at: Date, text: String,
                 images: [ConversationImageRecord] = [],
                 tokens: [Int32]? = nil, thinking: String? = nil,
+                generationSeconds: TimeInterval? = nil,
                 promptTokens: Int? = nil, cachedTokens: Int? = nil,
                 generatedTokens: Int? = nil, stopReason: String? = nil,
                 sampling: ConversationSampling? = nil,
@@ -232,6 +234,7 @@ public struct ConversationTurnRecord: Codable, Equatable, Sendable {
         self.images = images
         self.tokens = tokens
         self.thinking = thinking
+        self.generationSeconds = generationSeconds
         self.promptTokens = promptTokens
         self.cachedTokens = cachedTokens
         self.generatedTokens = generatedTokens

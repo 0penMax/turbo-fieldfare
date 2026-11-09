@@ -78,7 +78,8 @@ public struct ConversationDocument: Sendable {
                 cachedTokens: turn.cachedTokens,
                 generatedTokens: turn.generatedTokens,
                 tokenIDs: turn.tokens,
-                thinking: turn.thinking)
+                thinking: turn.thinking,
+                generationSeconds: turn.generationSeconds)
             turns.append(chatTurn)
             if chatTurn.role == .user {
                 pendingUser = chatTurn

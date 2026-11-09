@@ -13,6 +13,7 @@ struct CompletedTurnPersistence: Sendable {
     let userText: String
     let assistantText: String
     let reasoningText: String
+    let generationSeconds: TimeInterval?
     let diagnostics: AppDiagnostics?
     let sampling: ConversationSampling
     let boundary: ConversationBoundary

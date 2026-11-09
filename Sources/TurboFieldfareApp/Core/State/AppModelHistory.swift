@@ -378,6 +378,7 @@ extension AppModel {
     func enqueueCompletedTurnPersistence(userText: String,
                                          assistantText: String,
                                          reasoningText: String,
+                                         generationSeconds: TimeInterval?,
                                          diagnostics: AppDiagnostics?) {
         guard let binding = conversationBinding,
               let id = storedConversationID else { return }
@@ -390,6 +391,7 @@ extension AppModel {
             userText: userText,
             assistantText: assistantText,
             reasoningText: reasoningText,
+            generationSeconds: generationSeconds,
             diagnostics: diagnostics,
             sampling: currentSampling(),
             boundary: ConversationBoundary(
@@ -455,6 +457,7 @@ extension AppModel {
                     tokens: operation.diagnostics?.generatedTokenIDs,
                     thinking: operation.reasoningText.isEmpty
                         ? nil : operation.reasoningText,
+                    generationSeconds: operation.generationSeconds,
                     generatedTokens: operation.diagnostics?.generatedTokens,
                     stopReason: operation.diagnostics.map {
                         String(describing: $0.stopReason)
