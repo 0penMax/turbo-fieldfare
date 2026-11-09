@@ -65,6 +65,26 @@ import Testing
     }
 
     @MainActor
+    @Test func thinkingModeCannotChangeAfterConversationStarts() async throws {
+        let client = FakeInferenceClient(eventDelay: .milliseconds(1))
+        let model = try await readyModel(client)
+
+        #expect(model.canChangeThinkingMode)
+        model.promptText = "one"
+        model.send()
+        await finish(model)
+
+        #expect(!model.canChangeThinkingMode)
+        model.setThinkingEnabled(true)
+        #expect(!model.thinkingEnabled)
+
+        model.newChat()
+        #expect(model.canChangeThinkingMode)
+        model.setThinkingEnabled(true)
+        #expect(model.thinkingEnabled)
+    }
+
+    @MainActor
     @Test func theconversationIsOpenedOnceAndReusedAcrossTurns() async throws {
         let client = FakeInferenceClient(eventDelay: .milliseconds(1))
         let model = try await readyModel(client)

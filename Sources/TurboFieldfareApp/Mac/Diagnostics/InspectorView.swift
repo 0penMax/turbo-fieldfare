@@ -346,7 +346,10 @@ struct InspectorView: View {
                 set: { model.setThinkingEnabled($0) }))
                 .toggleStyle(.switch)
                 .accessibilityIdentifier(.inspectorThinking)
-            Text("Let Gemma think before answering. This can take longer and use more context.")
+                .disabled(!model.canChangeThinkingMode)
+            Text(model.canChangeThinkingMode
+                 ? "Let Gemma think before answering. This can take longer and use more context."
+                 : "Start a new chat to change thinking mode.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             LabeledContent("Temperature") {

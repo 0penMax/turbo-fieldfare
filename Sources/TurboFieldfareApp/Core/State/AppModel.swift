@@ -1062,8 +1062,15 @@ public final class AppModel {
 
     public func setThinkingEnabled(_ enabled: Bool) {
         guard thinkingEnabled != enabled else { return }
+        guard canChangeThinkingMode else { return }
         thinkingEnabled = enabled
         persistSettings()
+    }
+
+    /// Thinking changes the prompt prefix, so an existing token lineage must
+    /// keep the policy it started with. Start a new chat before changing it.
+    public var canChangeThinkingMode: Bool {
+        conversation.isEmpty && !isTurnInFlight
     }
 
     public func setExpertCacheSlots(_ slots: Int) {
