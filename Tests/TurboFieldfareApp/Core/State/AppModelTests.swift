@@ -72,6 +72,17 @@ import Testing
             .thinkingEnabled)
     }
 
+    @MainActor @Test func reasoningAndAnswerRemainSeparateInAppState() {
+        let model = AppModel()
+        model.apply(.reasoning(AppTokenEvent(
+            index: 0, textDelta: "considering", elapsedDecodeSeconds: 0.1)))
+        model.apply(.token(AppTokenEvent(
+            index: 1, textDelta: "answer", elapsedDecodeSeconds: 0.2)))
+
+        #expect(model.reasoningText == "considering")
+        #expect(model.outputText == "answer")
+    }
+
     @MainActor @Test func storedCacheGrowthClampsOnLaunchAndModelChange() async throws {
         let root = try makeSettingsRoot()
         defer { try? FileManager.default.removeItem(at: root) }

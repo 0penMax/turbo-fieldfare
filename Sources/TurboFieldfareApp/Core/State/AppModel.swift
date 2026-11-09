@@ -2690,6 +2690,7 @@ public final class AppModel {
         conversation.attachImagesToPendingTurn(retained)
         outputImageAttachments = retained.map(ChatImage.staged)
         outputText = ""
+        reasoningText = ""
         diagnostics = nil
         error = nil
         hasHandledTerminalEvent = false
@@ -2793,6 +2794,7 @@ public final class AppModel {
         if withdrawingFromTranscript {
             outputPromptText = ""
             outputText = ""
+            reasoningText = ""
             generationTranscriptMailbox?.reset()
         }
         // Dropped, never released: these are the same links the turn below is
