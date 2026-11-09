@@ -28,6 +28,21 @@ import TurboFieldfare
         #expect(text == "<|turn>literal raw prompt")
     }
 
+    @Test func textChatEstimateUsesSelectedThinkingTemplate() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let device = try MetalContext().device
+        let message = GFTokenizer.Message(role: .user, content: "Hi")
+        let estimate = try estimatedPromptTokens(
+            input: .messages([message]),
+            tokenizer: tokenizer,
+            device: device,
+            thinkingMode: .on)
+        let expected = tokenizer.encode(
+            try tokenizer.applyChatTemplate([message], thinkingMode: .on),
+            addBOS: false).count
+        #expect(estimate == expected)
+    }
+
     /// A relative `image_file` belongs to the messages file's directory. The old
     /// code branched on `URL(fileURLWithPath:).path`, which resolves against the
     /// *process* directory and is therefore always absolute — so the relative

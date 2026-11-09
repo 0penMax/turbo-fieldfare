@@ -113,7 +113,10 @@ public func run(args: Args,
         var effectiveArgs = args
         if args.resolvesPrefillChunkAuto {
             let promptTokens = try estimatedPromptTokens(
-                input: input, tokenizer: tokenizer, device: device)
+                input: input,
+                tokenizer: tokenizer,
+                device: device,
+                thinkingMode: args.thinkingMode)
             effectiveArgs.prefillChunkTokens =
                 PrefillRuntimeConfig.autoChunkTokens(promptTokens: promptTokens)
             if !args.quiet {
@@ -334,16 +337,20 @@ func orderedImageIDs(messages: [MultimodalMessage],
 func estimatedPromptTokens(
     input: PromptInput,
     tokenizer: GFTokenizer,
-    device: MTLDevice
+    device: MTLDevice,
+    thinkingMode: ThinkingMode = .off
 ) throws -> Int {
     switch input {
     case .raw(let text):
         return tokenizer.encode(text, addBOS: true).count
     case .messages(let messages):
-        return tokenizer.encode(try tokenizer.applyChatTemplate(messages),
+        return tokenizer.encode(try tokenizer.applyChatTemplate(
+            messages, thinkingMode: thinkingMode),
                                 addBOS: false).count
     case .multimodal(let messages, let images):
-        var total = 0
+        var total = thinkingMode == .on
+            ? try thinkingModePromptOverhead(tokenizer: tokenizer)
+            : 0
         for message in messages {
             for part in message.content {
                 if case .text(let text) = part {
@@ -364,6 +371,15 @@ func estimatedPromptTokens(
         }
         return total
     }
+}
+
+private func thinkingModePromptOverhead(tokenizer: GFTokenizer) throws -> Int {
+    let emptyUser = [GFTokenizer.Message(role: .user, content: "")]
+    let off = tokenizer.encode(
+        try tokenizer.applyChatTemplate(emptyUser, thinkingMode: .off), addBOS: false).count
+    let on = tokenizer.encode(
+        try tokenizer.applyChatTemplate(emptyUser, thinkingMode: .on), addBOS: false).count
+    return max(0, on - off)
 }
 
 func prefillCoercionNotice(
