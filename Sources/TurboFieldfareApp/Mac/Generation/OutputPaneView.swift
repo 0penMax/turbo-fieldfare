@@ -8,6 +8,7 @@ struct OutputPaneView: View {
     let model: AppModel
     @StoredState private var responseCopyFeedbackID: UUID?
     @StoredState private var isThinkingExpanded = false
+    @StoredState private var expandedHistoryThinkingIDs: Set<UUID> = []
 
     var body: some View {
         Group {
@@ -70,21 +71,18 @@ struct OutputPaneView: View {
                     }
                 }
             if model.showsLiveTurn && !model.reasoningText.isEmpty {
-                DisclosureGroup("Thinking", isExpanded: $isThinkingExpanded) {
-                    thinkingTextView(model.reasoningText)
-                }
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("transcript.thinking")
+                thinkingDisclosure(
+                    title: "Thinking", text: model.reasoningText,
+                    isExpanded: $isThinkingExpanded,
+                    accessibilityID: "transcript.thinking")
             }
             ForEach(model.transcriptHistory.indices, id: \.self) { index in
-                if let thinking = model.transcriptHistory[index].assistant.thinking {
-                    DisclosureGroup("Thinking · \(index + 1)") {
-                        thinkingTextView(thinking)
-                    }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("transcript.historyThinking.\(index)")
+                let assistant = model.transcriptHistory[index].assistant
+                if let thinking = assistant.thinking {
+                    thinkingDisclosure(
+                        title: "Thinking · \(index + 1)", text: thinking,
+                        isExpanded: historyThinkingBinding(for: assistant.id),
+                        accessibilityID: "transcript.historyThinking.\(index)")
                 }
             }
         }
@@ -103,6 +101,55 @@ struct OutputPaneView: View {
         }
         .frame(maxHeight: 240)
         .scrollIndicators(.visible)
+    }
+
+    private func thinkingDisclosure(
+        title: String,
+        text: String,
+        isExpanded: Binding<Bool>,
+        accessibilityID: String
+    ) -> some View {
+        DisclosureGroup(isExpanded: isExpanded) {
+            thinkingTextView(text)
+        } label: {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                if !isExpanded.wrappedValue {
+                    Text(lastThinkingLines(text))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .padding(10)
+        .background(
+            Color.primary.opacity(0.045),
+            in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .accessibilityIdentifier(accessibilityID)
+    }
+
+    private func historyThinkingBinding(for id: UUID) -> Binding<Bool> {
+        Binding(
+            get: { expandedHistoryThinkingIDs.contains(id) },
+            set: { expanded in
+                if expanded {
+                    expandedHistoryThinkingIDs.insert(id)
+                } else {
+                    expandedHistoryThinkingIDs.remove(id)
+                }
+            })
+    }
+
+    private func lastThinkingLines(_ text: String) -> String {
+        text.split(whereSeparator: \.isNewline)
+            .suffix(3)
+            .joined(separator: "\n")
     }
 
     private var copyResponseButton: some View {
