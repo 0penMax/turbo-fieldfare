@@ -103,7 +103,8 @@ public enum MultimodalPromptRenderer {
         if usesToolTemplate {
             templateTokens = try tokenizer.encodeToolChat(
                 messages: tokenizerMessages,
-                tools: tools)
+                tools: tools,
+                thinkingMode: thinkingMode)
         } else {
             let rendered = try tokenizer.applyChatTemplate(
                 tokenizerMessages, thinkingMode: thinkingMode)

@@ -363,8 +363,11 @@ public struct GFTokenizer: @unchecked Sendable {
         return s
     }
 
-    public func encodeToolChat(messages: [Message],
-                               tools: [FunctionDefinition]) throws -> [Int32] {
+    public func encodeToolChat(
+        messages: [Message],
+        tools: [FunctionDefinition],
+        thinkingMode: ThinkingMode = .off
+    ) throws -> [Int32] {
         guard tokenizer.hasChatTemplate else {
             throw GFTokenizerError.missingToolTemplate
         }
@@ -406,7 +409,7 @@ public struct GFTokenizer: @unchecked Sendable {
             truncation: false,
             maxLength: nil,
             tools: upstreamTools,
-            additionalContext: ["enable_thinking": false]
+            additionalContext: ["enable_thinking": thinkingMode == .on]
         ).map(Int32.init)
     }
 

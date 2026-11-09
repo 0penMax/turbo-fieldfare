@@ -44,6 +44,21 @@ struct OpenAIValidationTests {
         #expect(ids.count <= 16_384 - 4_096)
     }
 
+    @Test func toolTemplateHonorsThinkingMode() async throws {
+        let request = try fixture("opencode-1.15.11-initial.json")
+        let validated = try OpenAIRequestValidator.validate(
+            request, modelID: "gemma-4-26b-a4b-it")
+        let tokenizer = try await GFTokenizer.load()
+        let off = try tokenizer.encodeToolChat(
+            messages: validated.messages, tools: validated.tools,
+            thinkingMode: .off)
+        let on = try tokenizer.encodeToolChat(
+            messages: validated.messages, tools: validated.tools,
+            thinkingMode: .on)
+        #expect(!tokenizer.decode(off, skipSpecialTokens: false).contains("<|think|>"))
+        #expect(tokenizer.decode(on, skipSpecialTokens: false).contains("<|think|>"))
+    }
+
     @Test func capturedDshInitialRequestValidatesAndRenders() async throws {
         // DeepSeek Harness 0.1.1-rc.1's `workflow` tool declares its `args`
         // parameter as a bare object node with `additionalProperties` — the
