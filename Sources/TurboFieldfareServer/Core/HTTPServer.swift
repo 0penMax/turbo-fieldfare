@@ -397,6 +397,8 @@ private final class ServerHTTPHandler: ChannelInboundHandler, @unchecked Sendabl
                             return try await self.backend.generate(prepared) { event in
                                 guard request.stream else { return }
                                 switch event {
+                                case .reasoning:
+                                    break
                                 case .content(let text):
                                     self.writeStreamChunk(
                                         contextBox.value,

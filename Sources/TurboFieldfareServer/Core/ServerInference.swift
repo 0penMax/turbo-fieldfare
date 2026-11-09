@@ -3,12 +3,14 @@ import Foundation
 import TurboFieldfare
 
 public enum ServerInferenceEvent: Equatable, Sendable {
+    case reasoning(String)
     case content(String)
     case toolCall(ParsedToolCall)
 }
 
 public struct ServerCompletion: Equatable, Sendable {
     public let content: String
+    public let reasoning: String
     public let toolCalls: [ParsedToolCall]
     public let finishReason: String
     public let usage: OpenAIUsage
@@ -21,12 +23,14 @@ public struct ServerCompletion: Equatable, Sendable {
     public let decodeSeconds: Double
 
     public init(content: String,
+                reasoning: String = "",
                 toolCalls: [ParsedToolCall],
                 finishReason: String,
                 usage: OpenAIUsage,
                 prefillSeconds: Double = 0,
                 decodeSeconds: Double = 0) {
         self.content = content
+        self.reasoning = reasoning
         self.toolCalls = toolCalls
         self.finishReason = finishReason
         self.usage = usage
@@ -992,13 +996,13 @@ public actor ServerModelSession: ServerInferenceBackend {
             maxContext - effectivePromptIDs.count)
         config.stopStrings = []
 
-        let decoder = needsToolTemplate
-            ? StructuredAssistantDecoder(
-                tokenizer: tokenizer,
-                allowedTools: Set(request.tools.map(\.name)))
-            : nil
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer,
+            allowedTools: Set(request.tools.map(\.name)),
+            thinkingMode: request.thinking ? .on : .off)
         var stopMatcher = StreamingStopMatcher(stops: request.generationConfig.stopStrings)
         var content = ""
+        var reasoning = ""
         var calls: [ParsedToolCall] = []
         var decodingError: Error?
         var shouldStop = false
@@ -1020,8 +1024,9 @@ public actor ServerModelSession: ServerInferenceBackend {
                     func handle(_ events: [StructuredAssistantEvent]) {
                         for event in events {
                             switch event {
-                            case .reasoning:
-                                break
+                            case .reasoning(let text):
+                                reasoning += text
+                                onEvent(.reasoning(text))
                             case .content(let text):
                                 let visible = stopMatcher.push(text)
                                 if !visible.isEmpty {
@@ -1039,22 +1044,14 @@ public actor ServerModelSession: ServerInferenceBackend {
                     case .prefill:
                         break
                     case .token(_, let tokenID, let delta):
-                        let events = if let decoder {
-                            try decoder.consume(tokenID: tokenID, delta: delta)
-                        } else {
-                            delta.isEmpty ? [] : [StructuredAssistantEvent.content(delta)]
-                        }
+                        let events = try decoder.consume(tokenID: tokenID, delta: delta)
                         handle(events)
                     case .tail(let text):
                         // The flush tail is not tied to a token ID, so it must
                         // go through the decoder's channel state explicitly;
                         // appending it directly would leak text held back
                         // inside the thought channel or a tool call.
-                        let events = if let decoder {
-                            try decoder.consumeTail(text)
-                        } else {
-                            text.isEmpty ? [] : [StructuredAssistantEvent.content(text)]
-                        }
+                        let events = try decoder.consumeTail(text)
                         handle(events)
                     }
                 } catch {
@@ -1088,7 +1085,7 @@ public actor ServerModelSession: ServerInferenceBackend {
                 cause: .classify(decodingError))
         }
         do {
-            try decoder?.finish()
+            try decoder.finish()
         } catch {
             throw structuredFailure(
                 kind: .decoderFinish,
@@ -1127,6 +1124,7 @@ public actor ServerModelSession: ServerInferenceBackend {
         completed = true
         return ServerCompletion(
             content: content,
+            reasoning: reasoning,
             toolCalls: calls,
             finishReason: reason,
             usage: OpenAIUsage(promptTokens: result.prefillTokens,
