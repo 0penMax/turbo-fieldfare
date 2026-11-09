@@ -194,6 +194,11 @@ right pane to configure sampling, context length, expert-cache slots, and
 runtime options. See [Runtime controls](docs/RUNTIME_CONTROLS.md) for details
 and defaults.
 
+The Inspector's **Thinking** switch is off by default. Enable it to ask Gemma
+to think before answering; this can take longer and use more context. The app
+shows generated reasoning in a separate collapsed **Thinking** section, and a
+new chat is required before changing the setting for an existing conversation.
+
 Use **Settings → Text Size** to enlarge conversation and message-editor text
 from 100% to 200%. Changes apply immediately and are remembered across launches.
 
