@@ -15,6 +15,7 @@ public final class StructuredAssistantDecoder: @unchecked Sendable {
 
     private let tokenizer: GFTokenizer
     private let allowedTools: Set<String>
+    private let thinkingMode: ThinkingMode
     private let idGenerator: @Sendable () -> String
     private var channel: Channel = .visible
     private var label = ""
@@ -24,11 +25,13 @@ public final class StructuredAssistantDecoder: @unchecked Sendable {
 
     public init(tokenizer: GFTokenizer,
                 allowedTools: Set<String>,
+                thinkingMode: ThinkingMode = .off,
                 idGenerator: @escaping @Sendable () -> String = {
                     "call_" + (0..<24).map { _ in String(format: "%x", UInt8.random(in: 0...15)) }.joined()
                 }) {
         self.tokenizer = tokenizer
         self.allowedTools = allowedTools
+        self.thinkingMode = thinkingMode
         self.idGenerator = idGenerator
     }
 
@@ -118,7 +121,7 @@ public final class StructuredAssistantDecoder: @unchecked Sendable {
     private func routeText(_ delta: String) -> [StructuredAssistantEvent] {
         switch channel {
         case .thought:
-            return []
+            return thinkingMode == .on ? [.reasoning(delta)] : []
         case .visible:
             return delta.isEmpty ? [] : [.content(delta)]
         case .label:
