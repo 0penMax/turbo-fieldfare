@@ -370,6 +370,24 @@ struct HTTPServerTests {
         try await server.shutdown()
     }
 
+    @Test func streamingSeparatesReasoningFromAnswerDelta() async throws {
+        let server = TurboFieldfareHTTPServer(
+            modelID: "test-model", queueLimit: 1, backend: ReasoningServerBackend())
+        let channel = try await server.start(port: 0)
+        let port = try #require(channel.localAddress?.port)
+        var request = URLRequest(
+            url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = Data(#"{"model":"test-model","messages":[{"role":"user","content":"hi"}],"thinking":true,"stream":true}"#.utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        #expect((response as? HTTPURLResponse)?.statusCode == 200)
+        let stream = String(decoding: data, as: UTF8.self)
+        #expect(stream.contains(#""reasoning":"check the details""#))
+        #expect(stream.contains(#""content":"The answer is 42.""#))
+        try await server.shutdown()
+    }
+
     @Test func queryStringDoesNotChangeRoute() async throws {
         let server = TurboFieldfareHTTPServer(
             modelID: "test-model",
