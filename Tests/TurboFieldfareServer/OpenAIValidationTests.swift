@@ -830,7 +830,8 @@ struct GemmaToolCallTests {
 
     @Test func suppressesThoughtBlockAndExposesTextAfterChannelClose() async throws {
         let tokenizer = try await GFTokenizer.load()
-        let decoder = StructuredAssistantDecoder(tokenizer: tokenizer, allowedTools: [])
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .off)
         #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
         #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "thought").isEmpty)
         #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "\n").isEmpty)
@@ -846,7 +847,8 @@ struct GemmaToolCallTests {
         // back from before that token; it belongs to the channel in effect
         // now and must not vanish with the control token's early return.
         let tokenizer = try await GFTokenizer.load()
-        let decoder = StructuredAssistantDecoder(tokenizer: tokenizer, allowedTools: [])
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .off)
         #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "leftover") == [
             .content("leftover"),
         ])
@@ -859,7 +861,8 @@ struct GemmaToolCallTests {
 
     @Test func tailDuringThoughtChannelIsSuppressed() async throws {
         let tokenizer = try await GFTokenizer.load()
-        let decoder = StructuredAssistantDecoder(tokenizer: tokenizer, allowedTools: [])
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .off)
         #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
         #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "thought\n").isEmpty)
         #expect(try decoder.consumeTail("secret").isEmpty)
