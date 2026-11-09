@@ -857,6 +857,33 @@ struct GemmaToolCallTests {
         ])
     }
 
+    @Test func reasoningDoesNotEnterStructuredToolPayload() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer,
+            allowedTools: ["read"],
+            thinkingMode: .on,
+            idGenerator: { "call_test" })
+        var events: [StructuredAssistantEvent] = []
+        events += try decoder.consume(tokenID: tokenizer.channelStartID, delta: "")
+        events += try decoder.consume(tokenID: tokenizer.bosID, delta: "thought\n")
+        events += try decoder.consume(tokenID: tokenizer.bosID, delta: "checking files")
+        events += try decoder.consume(tokenID: tokenizer.toolCallStartID, delta: "")
+        for id in tokenizer.encode(#"call:read{path:<|"|>/tmp/x<|"|>}"#, addBOS: false) {
+            events += try decoder.consume(tokenID: id, delta: "")
+        }
+        events += try decoder.consume(tokenID: tokenizer.toolCallEndID, delta: "")
+
+        #expect(events.count == 2)
+        #expect(events.first == .reasoning("checking files"))
+        guard case .toolCall(let call)? = events.last else {
+            Issue.record("expected a separate structured tool call")
+            return
+        }
+        #expect(call.name == "read")
+        #expect(call.arguments.objectValue?["path"] == .string("/tmp/x"))
+    }
+
     @Test func routesControlTokenDeltaThroughCurrentChannel() async throws {
         // A non-empty delta on a control token is text the detokenizer held
         // back from before that token; it belongs to the channel in effect
