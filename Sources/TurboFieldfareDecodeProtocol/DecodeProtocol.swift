@@ -1,4 +1,5 @@
 import Foundation
+import TurboFieldfare
 
 public struct DecodeRuntimeOptions: Codable, Sendable, Equatable {
     public var expertCacheSlots: Int
@@ -47,6 +48,7 @@ public struct DecodeLoadRequest: Codable, Sendable {
     public var modelPath: String
     public var maxContextTokens: Int
     public var runtimeOptions: DecodeRuntimeOptions
+    public var thinkingMode: ThinkingMode
     public var forceLogitsHead: Bool
     public var requestID: UUID
 
@@ -101,6 +103,7 @@ public struct DecodeGenerationRequest: Codable, Sendable {
                 temperature: Float, topK: Int? = nil, topP: Float? = nil,
                 repetitionPenalty: Float = 1,
                 runtimeOptions: DecodeRuntimeOptions = DecodeRuntimeOptions(),
+                thinkingMode: ThinkingMode = .off,
                 generationID: UUID = UUID(),
                 conversationEpoch: UUID? = nil,
                 turnIndex: Int? = nil) {
@@ -115,6 +118,7 @@ public struct DecodeGenerationRequest: Codable, Sendable {
         self.topP = topP
         self.repetitionPenalty = repetitionPenalty
         self.runtimeOptions = runtimeOptions
+        self.thinkingMode = thinkingMode
         self.generationID = generationID
     }
 }

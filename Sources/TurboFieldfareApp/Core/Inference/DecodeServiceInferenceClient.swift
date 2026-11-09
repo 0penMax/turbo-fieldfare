@@ -243,6 +243,7 @@ public final class DecodeServiceInferenceClient: AppModelLifecycleClient,
                         topP: request.topP,
                         repetitionPenalty: request.repetitionPenalty,
                         runtimeOptions: Self.decodeRuntimeOptions(request.runtimeOptions),
+                        thinkingMode: request.thinkingMode,
                         generationID: generationID,
                         conversationEpoch: request.conversationEpoch,
                         turnIndex: request.turnIndex)

@@ -162,4 +162,21 @@ import TurboFieldfareDecodeProtocol
         #expect(decoded.imageAttachments == [attachment])
     }
 
+    @Test func generationRequestRoundTripPreservesThinkingMode() throws {
+        let request = DecodeGenerationRequest(
+            prompt: "hello", maxNewTokens: 16, maxContextTokens: 4096,
+            temperature: 0, thinkingMode: .on)
+        let pipe = Pipe()
+        try pipe.fileHandleForWriting.write(contentsOf: DecodeFrameCodec.encode(request))
+        try pipe.fileHandleForWriting.close()
+
+        let decoded = try DecodeFrameCodec.read(
+            DecodeGenerationRequest.self,
+            from: pipe.fileHandleForReading)
+        #expect(decoded.thinkingMode == .on)
+        #expect(DecodeGenerationRequest(
+            prompt: "hello", maxNewTokens: 16, maxContextTokens: 4096,
+            temperature: 0).thinkingMode == .off)
+    }
+
 }
