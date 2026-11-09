@@ -901,6 +901,28 @@ struct GemmaToolCallTests {
         #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "ok") == [.content("ok")])
     }
 
+    @Test func thinkingModeHandlesEmptyAndTruncatedThoughts() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let empty = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .on)
+        #expect(try empty.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
+        #expect(try empty.consume(tokenID: tokenizer.bosID, delta: "thought\n").isEmpty)
+        #expect(try empty.consume(tokenID: tokenizer.channelEndID, delta: "").isEmpty)
+        #expect(try empty.consume(tokenID: tokenizer.bosID, delta: "answer") == [
+            .content("answer"),
+        ])
+        try empty.finish()
+
+        let truncated = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .on)
+        #expect(try truncated.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
+        #expect(try truncated.consume(tokenID: tokenizer.bosID, delta: "thought\n").isEmpty)
+        #expect(try truncated.consumeTail("unfinished reasoning") == [
+            .reasoning("unfinished reasoning"),
+        ])
+        try truncated.finish()
+    }
+
     @Test func tailDuringThoughtChannelIsSuppressed() async throws {
         let tokenizer = try await GFTokenizer.load()
         let decoder = StructuredAssistantDecoder(
