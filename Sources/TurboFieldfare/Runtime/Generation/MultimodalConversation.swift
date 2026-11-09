@@ -292,7 +292,7 @@ public actor MultimodalConversation {
 
     /// Exactly the tokens the KV holds, in order.
     private var kvTokenIDs: [Int32] = []
-    private var pending: (parts: [MultimodalContinuationPart], images: [URL])?
+    private var pending: (parts: [MultimodalContinuationPart], images: [URL], thinkingMode: ThinkingMode)?
     private var closed = false
     /// One generation at a time. `RawCompletionScratch` documents that its
     /// buffers and sampler belong to a single run and that the guard is the
@@ -374,7 +374,8 @@ public actor MultimodalConversation {
     public var isGenerating: Bool { generating }
 
     /// Stages the next user turn without prefilling it.
-    public func append(parts: [MultimodalContinuationPart], images: [URL] = []) throws {
+    public func append(parts: [MultimodalContinuationPart], images: [URL] = [],
+                       thinkingMode: ThinkingMode = .off) throws {
         guard !closed else { throw MultimodalConversationError.closed }
         // A turn staged while another is decoding used to be accepted and then
         // dropped: `generate()` clears `pending` when it commits, so the newly
@@ -387,7 +388,7 @@ public actor MultimodalConversation {
         guard !parts.isEmpty, imageCount == images.count else {
             throw MultimodalConversationError.emptyTurn
         }
-        pending = (parts, images)
+        pending = (parts, images, thinkingMode)
     }
 
     /// Drops a staged turn that has not been generated yet.
@@ -453,12 +454,13 @@ public actor MultimodalConversation {
         parts: [MultimodalContinuationPart],
         images: [URL] = [],
         config: GenerationConfig,
+        thinkingMode: ThinkingMode = .off,
         prefillConfig: PrefillRuntimeConfig = .defaultChunked,
         checkCancellation: @Sendable () throws -> Void = {},
         shouldStop: (@Sendable () -> Bool)? = nil,
         onProgress: (@Sendable (RawDecodeProgress) -> Void)? = nil
     ) async throws -> MultimodalTurnResult {
-        try append(parts: parts, images: images)
+        try append(parts: parts, images: images, thinkingMode: thinkingMode)
         return try await generate(
             config: config, prefillConfig: prefillConfig,
             checkCancellation: checkCancellation, shouldStop: shouldStop,
@@ -494,6 +496,7 @@ public actor MultimodalConversation {
         defer { finishGeneration() }
         let parts = staged.parts
         let images = staged.images
+        let thinkingMode = staged.thinkingMode
         let imageCount = parts.filter {
             if case .image = $0 { return true } else { return false }
         }.count
@@ -504,6 +507,7 @@ public actor MultimodalConversation {
 
         let cached = kvTokenIDs.count
         let turn = try await encodeTurn(parts: parts, images: images,
+                                        thinkingMode: thinkingMode,
                                         checkCancellation: checkCancellation)
         // A run that stopped on max tokens or was cancelled left its final
         // token outside the KV. Replay it ahead of this turn, exactly as the
@@ -799,6 +803,7 @@ public actor MultimodalConversation {
     private func encodeTurn(
         parts: [MultimodalContinuationPart],
         images: [URL],
+        thinkingMode: ThinkingMode,
         checkCancellation: @Sendable () throws -> Void
     ) async throws -> EncodedTurn {
         guard !images.isEmpty, let visionRuntime else {
@@ -807,7 +812,8 @@ public actor MultimodalConversation {
             let ids = kvTokenIDs.isEmpty
                 ? tokenizer.encode(
                     try tokenizer.applyChatTemplate(
-                        [GFTokenizer.Message(role: .user, content: text)]),
+                        [GFTokenizer.Message(role: .user, content: text)],
+                        thinkingMode: thinkingMode),
                     addBOS: false)
                 : tokenizer.encodeTextContinuation(userContent: text)
             return EncodedTurn(effectiveTokenIDs: ids, prefillInput: nil)
@@ -829,7 +835,8 @@ public actor MultimodalConversation {
             textAndImages: parts, imageTokenCounts: counts,
             // An empty KV means this is the conversation's first turn, which
             // needs the chat template's opening rather than a continuation's.
-            openingConversation: kvTokenIDs.isEmpty)
+            openingConversation: kvTokenIDs.isEmpty,
+            thinkingMode: thinkingMode)
         var spans: [MultimodalImageSpan] = []
         for (range, plan) in zip(bridge.imageTokenRanges, plans) {
             try checkCancellation()

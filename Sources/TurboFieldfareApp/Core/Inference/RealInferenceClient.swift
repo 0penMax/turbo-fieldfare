@@ -556,7 +556,7 @@ actor RealInferenceSession {
             if request.imageAttachments.isEmpty {
                 let renderedPrompt = try tokenizer.applyChatTemplate([
                     GFTokenizer.Message(role: .user, content: request.prompt)
-                ])
+                ], thinkingMode: request.thinkingMode)
                 promptIds = tokenizer.encode(renderedPrompt, addBOS: false)
                 multimodalInput = nil
             } else {
@@ -591,7 +591,8 @@ actor RealInferenceSession {
                 let input = try MultimodalPromptRenderer.render(
                     messages: [MultimodalMessage(role: .user, content: content)],
                     featuresByID: features,
-                    tokenizer: tokenizer)
+                    tokenizer: tokenizer,
+                    thinkingMode: request.thinkingMode)
                 promptIds = input.effectiveTokenIDs
                 multimodalInput = input
             }
@@ -718,6 +719,7 @@ actor RealInferenceSession {
                 parts: parts, images: imageURLs,
                 config: Self.generationConfig(
                     for: request, maxNewTokens: request.maxNewTokens),
+                thinkingMode: request.thinkingMode,
                 prefillConfig: prefillConfig,
                 checkCancellation: { try Task.checkCancellation() },
                 shouldStop: stopFlagReader(),

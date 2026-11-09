@@ -434,7 +434,8 @@ public struct GFTokenizer: @unchecked Sendable {
     public func encodeMultimodalUserContinuation(
         textAndImages: [MultimodalContinuationPart],
         imageTokenCounts: [Int],
-        openingConversation: Bool = false
+        openingConversation: Bool = false,
+        thinkingMode: ThinkingMode = .off
     ) throws -> MultimodalContinuationTokens {
         var text = ""
         var expected = 0
@@ -464,7 +465,8 @@ public struct GFTokenizer: @unchecked Sendable {
             // first turn of a conversation is identical whether or not it
             // carries an image.
             template = encode(
-                try applyChatTemplate([Message(role: .user, content: content)]),
+                try applyChatTemplate([Message(role: .user, content: content)],
+                                      thinkingMode: thinkingMode),
                 addBOS: false)
         } else {
             template = [endOfTurnID] + encode(
