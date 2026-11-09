@@ -18,10 +18,18 @@ import TurboFieldfare
         #expect(arguments.repetitionPenalty == 1)
         #expect(arguments.seed == nil)
         #expect(arguments.stops.isEmpty)
+        #expect(arguments.thinkingMode == .off)
         #expect(!arguments.quiet)
 
         let runtime = try arguments.resolvedRuntimeConfiguration(forceLogitsHead: false)
         #expect(runtime == RuntimeConfiguration.production)
+    }
+
+    @Test func thinkingFlagEnablesThinkingMode() throws {
+        let arguments = try Args.parse([
+            "--model", "m.gturbo", "--chat-prompt", "hi", "--thinking",
+        ])
+        #expect(arguments.thinkingMode == .on)
     }
 
     /// `auto` only resolves a size where a chunked prefill will run at it.

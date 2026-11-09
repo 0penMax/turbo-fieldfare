@@ -16,6 +16,7 @@ public struct Args: Equatable, Sendable {
     public var repetitionPenalty: Float
     public var seed: UInt64?
     public var stops: [String]
+    public var thinkingMode: ThinkingMode
     public var quiet: Bool
     public var expertCacheSlots: Int
     public var expertCachePolicy: RuntimeExpertCachePolicy
@@ -41,6 +42,7 @@ public struct Args: Equatable, Sendable {
                 repetitionPenalty: Float = 1.0,
                 seed: UInt64? = nil,
                 stops: [String] = [],
+                thinkingMode: ThinkingMode = .off,
                 quiet: Bool = false,
                 expertCacheSlots: Int = RuntimeConfiguration.production.expertCacheSlots,
                 expertCachePolicy: RuntimeExpertCachePolicy = RuntimeConfiguration.production.expertCachePolicy,
@@ -63,6 +65,7 @@ public struct Args: Equatable, Sendable {
         self.repetitionPenalty = repetitionPenalty
         self.seed = seed
         self.stops = stops
+        self.thinkingMode = thinkingMode
         self.quiet = quiet
         self.expertCacheSlots = expertCacheSlots
         self.expertCachePolicy = expertCachePolicy
@@ -209,6 +212,7 @@ extension Args {
         var repetitionPenalty: Float = 1.0
         var seed: UInt64?
         var stops: [String] = []
+        var thinkingMode: ThinkingMode = .off
         var quiet = false
         let runtimeDefaults = RuntimeConfiguration.production
         var expertCacheSlots = runtimeDefaults.expertCacheSlots
@@ -226,6 +230,9 @@ extension Args {
                 throw ArgsError.helpRequested
             case "--quiet":
                 quiet = true
+                index += 1
+            case "--thinking":
+                thinkingMode = .on
                 index += 1
             case "--model":
                 model = try takeValue(argv, &index, flag: flag)
@@ -388,6 +395,7 @@ extension Args {
                              repetitionPenalty: repetitionPenalty,
                              seed: seed,
                              stops: stops,
+                             thinkingMode: thinkingMode,
                              quiet: quiet,
                              expertCacheSlots: expertCacheSlots,
                              expertCachePolicy: expertCachePolicy,
