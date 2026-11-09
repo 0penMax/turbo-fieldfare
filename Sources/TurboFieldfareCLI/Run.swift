@@ -73,7 +73,9 @@ public func run(args: Args,
         case .messages(let messages):
             multimodalMessages = nil
             promptIds = tokenizer.encode(
-                try tokenizer.applyChatTemplate(messages), addBOS: false)
+                try tokenizer.applyChatTemplate(
+                    messages, thinkingMode: args.thinkingMode),
+                addBOS: false)
         case .multimodal(let messages, let images):
             multimodalMessages = messages
             imageURLs = images
@@ -240,7 +242,8 @@ public func run(args: Args,
             let rendered = try MultimodalPromptRenderer.render(
                 messages: multimodalMessages,
                 featuresByID: features,
-                tokenizer: tokenizer)
+                tokenizer: tokenizer,
+                thinkingMode: args.thinkingMode)
             promptIds = rendered.effectiveTokenIDs
             multimodalInput = rendered
             guard promptIds.count < args.maxContext else {
