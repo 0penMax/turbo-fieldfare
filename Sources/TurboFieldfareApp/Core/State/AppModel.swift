@@ -2868,6 +2868,7 @@ public final class AppModel {
             runtimeOptions: effective.options(
                 prefillEnabled: runtimeOptions.prefillEnabled,
                 prefillChunkTokens: runtimeOptions.prefillChunkTokens),
+            thinkingMode: thinkingEnabled ? .on : .off,
             // Carried whether or not a ticket exists: the image budget has to
             // fit around the conversation even while the composer is only being
             // validated.

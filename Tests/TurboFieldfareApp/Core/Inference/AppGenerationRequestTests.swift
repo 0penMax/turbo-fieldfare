@@ -13,7 +13,14 @@ import TurboFieldfare
         #expect(request.topK == 64)
         #expect(request.topP == 0.95)
         #expect(request.repetitionPenalty == 1)
+        #expect(request.thinkingMode == .off)
         #expect(!request.isPureGreedy)
+    }
+
+    @Test func requestCanCarryEnabledThinkingMode() {
+        let request = AppGenerationRequest(
+            modelDirectory: existingDirectory, prompt: "hello", thinkingMode: .on)
+        #expect(request.thinkingMode == .on)
     }
 
     @Test func temperatureZeroRemainsPureGreedyWithTruncationDefaults() {

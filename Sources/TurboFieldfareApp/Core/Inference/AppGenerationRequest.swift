@@ -15,6 +15,7 @@ public struct AppGenerationRequest: Equatable, Sendable {
     public var topP: Float?
     public var repetitionPenalty: Float
     public var runtimeOptions: AppRuntimeOptions
+    public var thinkingMode: ThinkingMode
     /// Append this turn to the retained conversation instead of resetting the
     /// KV and prefilling the whole prompt. The decode service sets it only
     /// after `DecodeConversationGate` has admitted the turn.
@@ -42,6 +43,7 @@ public struct AppGenerationRequest: Equatable, Sendable {
                 topP: Float? = 0.95,
                 repetitionPenalty: Float = 1.0,
                 runtimeOptions: AppRuntimeOptions = AppRuntimeOptions(),
+                thinkingMode: ThinkingMode = .off,
                 continuesConversation: Bool = false,
                 conversationTokens: Int = 0,
                 conversationEpoch: UUID? = nil,
@@ -60,6 +62,7 @@ public struct AppGenerationRequest: Equatable, Sendable {
         self.topP = topP
         self.repetitionPenalty = repetitionPenalty
         self.runtimeOptions = runtimeOptions
+        self.thinkingMode = thinkingMode
     }
 
     public var isPureGreedy: Bool {
