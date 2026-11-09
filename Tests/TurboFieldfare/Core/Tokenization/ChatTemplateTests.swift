@@ -41,6 +41,23 @@ struct ChatTemplateTests {
         }
     }
 
+    @Test(arguments: [GFTokenizer.Role.user, .assistant, .tool])
+    func guidanceAfterConversationIsRejectedWhenThinking(_ role: GFTokenizer.Role) {
+        #expect(throws: GFTokenizerError.self) {
+            try tok.applyChatTemplate([
+                Message(role: .user, content: "conversation"),
+                Message(role: .system, content: "late"),
+            ], thinkingMode: .on)
+        }
+        #expect(throws: GFTokenizerError.self) {
+            try tok.applyChatTemplate([
+                Message(role: .system, content: "first"),
+                Message(role: role, content: "conversation"),
+                Message(role: .system, content: "late"),
+            ], thinkingMode: .on)
+        }
+    }
+
     @Test("Single user turn has the documented marker structure")
     func singleUserTurn() throws {
         let p = try tok.applyChatTemplate(
