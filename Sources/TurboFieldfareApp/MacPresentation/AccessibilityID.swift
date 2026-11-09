@@ -87,6 +87,7 @@ public enum AccessibilityID: String, CaseIterable, Sendable {
 
     case inspectorContext = "inspector.context"
     case inspectorSlots = "inspector.slots"
+    case inspectorThinking = "inspector.thinking"
     case inspectorTemperature = "inspector.temperature"
     case inspectorTopK = "inspector.topK"
     case inspectorTopKValue = "inspector.topK.value"

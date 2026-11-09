@@ -341,6 +341,14 @@ struct InspectorView: View {
 
     private var generationSection: some View {
         Section("Generation") {
+            Toggle("Thinking", isOn: Binding(
+                get: { model.thinkingEnabled },
+                set: { model.setThinkingEnabled($0) }))
+                .toggleStyle(.switch)
+                .accessibilityIdentifier(.inspectorThinking)
+            Text("Let Gemma think before answering. This can take longer and use more context.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             LabeledContent("Temperature") {
                 HStack(spacing: 8) {
                     Slider(value: $model.temperature, in: 0...2, step: 0.05)
