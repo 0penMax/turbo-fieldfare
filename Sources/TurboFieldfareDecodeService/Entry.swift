@@ -333,6 +333,7 @@ enum DecodeServiceError: Error, CustomStringConvertible {
                         topP: request.topP,
                         repetitionPenalty: request.repetitionPenalty,
                         runtimeOptions: options,
+                        thinkingMode: request.thinkingMode,
                         continuesConversation: continues,
                         conversationTokens: continues ? carried : 0)
                     for try await event in client.generate(generation) { outbox.publish(event) }
