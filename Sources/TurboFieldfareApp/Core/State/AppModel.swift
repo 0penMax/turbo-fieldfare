@@ -97,6 +97,7 @@ public final class AppModel {
     public var topP: Double = 0.95
     public private(set) var newlineShortcut: AppNewlineShortcut = .return
     public private(set) var showPromptExamples: Bool = true
+    public private(set) var thinkingEnabled: Bool = false
     public private(set) var textSize: AppTextSize = .standard
     /// Whether the list of chats is showing. Persisted, so the window comes
     /// back the way it was left.
@@ -305,6 +306,7 @@ public final class AppModel {
         self.topP = settings.topP
         self.newlineShortcut = settings.newlineShortcut
         self.showPromptExamples = settings.showPromptExamples
+        self.thinkingEnabled = settings.thinkingEnabled
         self.textSize = settings.textSize
         self.isSidebarVisible = settings.sidebarVisible
         self.isInspectorVisible = settings.inspectorVisible
@@ -1055,6 +1057,12 @@ public final class AppModel {
     public func setShowPromptExamples(_ show: Bool) {
         guard showPromptExamples != show else { return }
         showPromptExamples = show
+        persistSettings()
+    }
+
+    public func setThinkingEnabled(_ enabled: Bool) {
+        guard thinkingEnabled != enabled else { return }
+        thinkingEnabled = enabled
         persistSettings()
     }
 
@@ -2223,6 +2231,7 @@ public final class AppModel {
             inspectorVisible: isInspectorVisible,
             visionResidencyPolicy: runtimeOptions.visionResidencyPolicy,
             rdadvisePolicy: runtimeOptions.rdadvisePolicy,
+            thinkingEnabled: thinkingEnabled,
             loadModelOnLaunch: loadModelOnLaunch)
     }
 

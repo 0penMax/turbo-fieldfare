@@ -52,6 +52,26 @@ import Testing
         #expect(model.maxContextTokens == 65_536)
     }
 
+    @MainActor @Test func thinkingPreferenceLoadsAndPersistsThroughAppModel() throws {
+        let root = try makeSettingsRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let directory = root.appendingPathComponent("model.gturbo")
+        try MacAppSettingsFileStore.save(
+            MacAppSettings(thinkingEnabled: true), forModelDirectory: directory)
+        let model = AppModel(
+            modelDirectory: directory,
+            appDataDirectory: directory.deletingLastPathComponent(),
+            client: MockLifecycleInferenceClient(),
+            settingsPersistenceEnabled: true,
+            hostMemoryBytes: 8 << 30)
+        #expect(model.thinkingEnabled)
+
+        model.setThinkingEnabled(false)
+
+        #expect(!MacAppSettingsFileStore.loadOrCreate(forModelDirectory: directory)
+            .thinkingEnabled)
+    }
+
     @MainActor @Test func storedCacheGrowthClampsOnLaunchAndModelChange() async throws {
         let root = try makeSettingsRoot()
         defer { try? FileManager.default.removeItem(at: root) }
