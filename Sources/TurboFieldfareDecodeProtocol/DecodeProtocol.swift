@@ -232,6 +232,7 @@ public enum DecodeServiceEventKind: String, Codable, Sendable {
     case ready
     case prefill
     case snapshot
+    case reasoning
     /// Carries a live memory reading while image encoding or another silent
     /// phase has not produced progress or tokens yet.
     case memory
@@ -304,6 +305,7 @@ public struct DecodeServiceEvent: Codable, Sendable {
     public var generationID: UUID
     public var sequence: UInt64
     public var textDelta: String
+    public var reasoningDelta: String?
     public var tokenCount: Int
     public var promptTokenCount: Int?
     public var computedPrefillTokens: Int?
@@ -348,6 +350,7 @@ public struct DecodeServiceEvent: Codable, Sendable {
 
     public init(kind: DecodeServiceEventKind, generationID: UUID,
                 sequence: UInt64 = 0, textDelta: String = "",
+                reasoningDelta: String? = nil,
                 tokenCount: Int = 0, promptTokenCount: Int? = nil,
                 computedPrefillTokens: Int? = nil,
                 prefillDone: Int? = nil, prefillTotal: Int? = nil,
@@ -370,6 +373,7 @@ public struct DecodeServiceEvent: Codable, Sendable {
         self.generationID = generationID
         self.sequence = sequence
         self.textDelta = textDelta
+        self.reasoningDelta = reasoningDelta
         self.tokenCount = tokenCount
         self.promptTokenCount = promptTokenCount
         self.computedPrefillTokens = computedPrefillTokens

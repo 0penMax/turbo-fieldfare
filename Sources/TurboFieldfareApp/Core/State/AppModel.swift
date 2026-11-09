@@ -77,6 +77,7 @@ public final class AppModel {
     /// opens the conversation again before it sends anything.
     var serviceEpoch: UUID?
     public var outputText: String = ""
+    public var reasoningText: String = ""
     public var runState: RunState = .idle
     public var runtimeOptions = AppRuntimeOptions()
     public var maxNewTokensOverride: Int?
@@ -2442,6 +2443,7 @@ public final class AppModel {
         conversation.startNew()
         outputPromptText = ""
         outputText = ""
+        reasoningText = ""
         generationTranscriptMailbox?.reset()
         diagnostics = nil
         error = nil
@@ -2493,6 +2495,7 @@ public final class AppModel {
         if !carried.isEmpty {
             outputPromptText = ""
             outputText = ""
+            reasoningText = ""
             outputImageAttachments = []
             generationTranscriptMailbox?.reset()
         }
@@ -2613,6 +2616,7 @@ public final class AppModel {
             outputPromptText = turn.prompt
             outputImageAttachments = turn.images.map(ChatImage.staged)
             outputText = ""
+            reasoningText = ""
             isDrawnAsTheLiveTurn = true
             if await !replayIntoKV(id: replayID, turn: turn) {
                 // The machine's `.restoreComposer` effect has already handed
@@ -2905,6 +2909,9 @@ public final class AppModel {
             if !token.textDelta.isEmpty {
                 outputText += token.textDelta
             }
+        case .reasoning(let token):
+            phase = .decode
+            if !token.textDelta.isEmpty { reasoningText += token.textDelta }
         case .finished(let diagnostics):
             visionTowerMappedBytes = diagnostics.visionTowerMappedBytes
             finishSuccessfully(diagnostics)

@@ -275,7 +275,8 @@ public final class DecodeServiceInferenceClient: AppModelLifecycleClient,
                             continuation.yield(.memorySample)
                             continue
                         }
-                        if event.kind == .prefill || event.kind == .snapshot {
+                        if event.kind == .prefill || event.kind == .snapshot
+                            || event.kind == .reasoning {
                             guard event.sequence == expectedSequence else {
                                 throw AppInferenceError.unknown(
                                     "decode service event sequence changed from \(expectedSequence) to \(event.sequence)")
@@ -286,6 +287,14 @@ public final class DecodeServiceInferenceClient: AppModelLifecycleClient,
                            let done = event.prefillDone,
                            let total = event.prefillTotal {
                             continuation.yield(.prefillProgress(done: done, total: total))
+                            continue
+                        }
+                        if event.kind == .reasoning,
+                           let delta = event.reasoningDelta {
+                            continuation.yield(.reasoning(AppTokenEvent(
+                                index: max(0, event.tokenCount - 1),
+                                textDelta: delta,
+                                elapsedDecodeSeconds: event.decodeSeconds)))
                             continue
                         }
                         if event.kind == .snapshot {

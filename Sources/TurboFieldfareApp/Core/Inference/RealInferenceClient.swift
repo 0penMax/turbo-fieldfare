@@ -802,6 +802,8 @@ actor RealInferenceSession {
                                                                  executedMode: executedPrefillMode,
                                                                  kvStorageMode: .fp16)
 
+            let assistantDecoder = StructuredAssistantDecoder(
+                tokenizer: tokenizer, allowedTools: [], thinkingMode: request.thinkingMode)
             let report: @Sendable (RawDecodeProgress) -> Void = { event in
                 switch event {
                 case .prefill(let done, let total):
@@ -812,19 +814,47 @@ actor RealInferenceSession {
                         progress.countersAtDecodeStart = RunnerCounterSnapshot(runner)
                     }
                     continuation.yield(.prefillProgress(done: done, total: total))
-                case .token(let index, _, let delta):
+                case .token(let index, let tokenID, let delta):
                     if progress.firstTokenDate == nil { progress.firstTokenDate = Date() }
                     progress.generated = index + 1
                     if index % 8 == 0 { _ = memorySampler.sample() }
-                    continuation.yield(.token(AppTokenEvent(
-                        index: index,
-                        textDelta: delta,
-                        elapsedDecodeSeconds: progress.elapsedDecodeSeconds)))
+                    let token = AppTokenEvent(
+                        index: index, textDelta: delta,
+                        elapsedDecodeSeconds: progress.elapsedDecodeSeconds)
+                    if let events = try? assistantDecoder.consume(tokenID: tokenID, delta: delta) {
+                        for event in events {
+                            switch event {
+                            case .content(let text):
+                                continuation.yield(.token(AppTokenEvent(
+                                    index: index, textDelta: text,
+                                    elapsedDecodeSeconds: token.elapsedDecodeSeconds)))
+                            case .reasoning(let text):
+                                continuation.yield(.reasoning(AppTokenEvent(
+                                    index: index, textDelta: text,
+                                    elapsedDecodeSeconds: token.elapsedDecodeSeconds)))
+                            case .toolCall:
+                                break
+                            }
+                        }
+                    }
                 case .tail(let text):
-                    continuation.yield(.token(AppTokenEvent(
-                        index: max(progress.generated - 1, 0),
-                        textDelta: text,
-                        elapsedDecodeSeconds: progress.elapsedDecodeSeconds)))
+                    let index = max(progress.generated - 1, 0)
+                    if let events = try? assistantDecoder.consumeTail(text) {
+                        for event in events {
+                            switch event {
+                            case .content(let value):
+                                continuation.yield(.token(AppTokenEvent(
+                                    index: index, textDelta: value,
+                                    elapsedDecodeSeconds: progress.elapsedDecodeSeconds)))
+                            case .reasoning(let value):
+                                continuation.yield(.reasoning(AppTokenEvent(
+                                    index: index, textDelta: value,
+                                    elapsedDecodeSeconds: progress.elapsedDecodeSeconds)))
+                            case .toolCall:
+                                break
+                            }
+                        }
+                    }
                 }
             }
 
