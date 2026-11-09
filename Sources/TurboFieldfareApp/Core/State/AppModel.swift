@@ -2933,7 +2933,9 @@ public final class AppModel {
         self.diagnostics = diagnostics
         let userText = outputPromptText
         let assistantText = outputText
-        conversation.completeTurn(text: outputText, diagnostics: diagnostics)
+        conversation.completeTurn(
+            text: outputText, diagnostics: diagnostics,
+            thinking: reasoningText.isEmpty ? nil : reasoningText)
         // Written here and nowhere else: this is the one path that commits a
         // turn to the KV, so it is the one path where the transcript on disk
         // and the model's context can be made to say the same thing. A turn

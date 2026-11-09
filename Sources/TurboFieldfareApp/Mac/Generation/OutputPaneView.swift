@@ -83,6 +83,21 @@ struct OutputPaneView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("transcript.thinking")
             }
+            ForEach(model.transcriptHistory.indices, id: \.self) { index in
+                if let thinking = model.transcriptHistory[index].assistant.thinking {
+                    DisclosureGroup("Thinking · (index + 1)") {
+                        Text(thinking)
+                            .textSelection(.enabled)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 6)
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("transcript.historyThinking.\(index)")
+                }
+            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)

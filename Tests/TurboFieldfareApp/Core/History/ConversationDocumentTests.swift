@@ -67,7 +67,8 @@ import TurboFieldfare
             .turn(ConversationTurnRecord(
                 role: .user, at: Date(), text: "one", tokens: [1, 2])),
             .turn(ConversationTurnRecord(
-                role: .assistant, at: Date(), text: "a", tokens: [3])),
+                role: .assistant, at: Date(), text: "a", tokens: [3],
+                thinking: "first reasoning")),
             .title(ConversationTitleRecord(
                 title: "renamed", source: .user, at: Date())),
             .turn(ConversationTurnRecord(
@@ -83,6 +84,9 @@ import TurboFieldfare
         #expect(document.turns.map(\.text) == ["one", "a", "two", "b"])
         #expect(document.pairs.map(\.user.text) == ["one", "two"])
         #expect(document.pairs.map(\.assistant.text) == ["a", "b"])
+        #expect(document.pairs.first?.assistant.thinking == "first reasoning")
+        #expect(document.turns[1].tokenIDs == [3],
+                "reasoning remains display metadata; replay still uses token IDs")
         guard case .success(let lineage) = document.lineage else {
             Issue.record("a complete record refused to replay")
             return
