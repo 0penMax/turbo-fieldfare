@@ -2913,6 +2913,9 @@ public final class AppModel {
             }
         case .reasoning(let token):
             phase = .decode
+            liveTokenCount = token.index + 1
+            liveElapsedDecodeSeconds = token.elapsedDecodeSeconds
+            sampleLiveMemory()
             if !token.textDelta.isEmpty { reasoningText += token.textDelta }
         case .finished(let diagnostics):
             visionTowerMappedBytes = diagnostics.visionTowerMappedBytes

@@ -25,6 +25,18 @@ import Testing
     }
 
     @MainActor
+    @Test func reasoningEventUpdatesLiveGenerationRate() {
+        let model = AppModel()
+        model.apply(.reasoning(AppTokenEvent(
+            index: 4, textDelta: "thinking", elapsedDecodeSeconds: 2.0)))
+
+        #expect(model.phase == .decode)
+        #expect(model.liveTokenCount == 5)
+        #expect(model.liveElapsedDecodeSeconds == 2.0)
+        #expect(model.liveTokensPerSecond == 2.5)
+    }
+
+    @MainActor
     @Test func liveRateIsZeroBeforeAnyToken() {
         let model = AppModel()
         #expect(model.liveTokensPerSecond == 0)
