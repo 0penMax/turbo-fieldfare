@@ -310,7 +310,8 @@ struct ServerPromptCache: Sendable {
                 cachedMessages: entry.inputMessages,
                 assistant: entry.assistantTurn.message,
                 incomingMessages: request.messages,
-                tools: request.tools)
+                tools: request.tools,
+                thinkingMode: request.thinking ? .on : .off)
         } catch {
             return .miss(.bridgeRenderFailed)
         }

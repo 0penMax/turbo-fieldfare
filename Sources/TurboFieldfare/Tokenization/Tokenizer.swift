@@ -518,12 +518,17 @@ public struct GFTokenizer: @unchecked Sendable {
         cachedMessages: [Message],
         assistant: Message,
         incomingMessages: [Message],
-        tools: [FunctionDefinition]
+        tools: [FunctionDefinition],
+        thinkingMode: ThinkingMode = .off
     ) throws -> [Int32] {
         let prefix = try encodeToolChat(
             messages: cachedMessages + [assistant],
-            tools: tools)
-        let full = try encodeToolChat(messages: incomingMessages, tools: tools)
+            tools: tools,
+            thinkingMode: thinkingMode)
+        let full = try encodeToolChat(
+            messages: incomingMessages,
+            tools: tools,
+            thinkingMode: thinkingMode)
         let callCount = assistant.toolCalls.count
         let starts = prefix.indices.filter { prefix[$0] == toolCallStartID }
         guard callCount > 0, starts.count >= callCount,

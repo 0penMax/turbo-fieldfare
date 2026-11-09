@@ -139,17 +139,32 @@ struct ServerPromptCacheTests {
                             tokenizer: tokenizer) == .hit(effectivePromptIDs: prefix + [4], cachedPromptTokens: 2))
     }
 
-    @Test func capturedOpenCodeToolResultUsesFrozenToolBoundary() async throws {
+    @Test func capturedOpenCodeToolResultKeepsThinkingModeInFrozenBoundary() async throws {
         let tokenizer = try await GFTokenizer.load()
-        let initial = try validatedFixture("opencode-1.15.11-initial.json")
-        let continuation = try validatedFixture("opencode-1.15.11-tool-result.json")
+        func enableThinking(_ request: ValidatedChatRequest) -> ValidatedChatRequest {
+            ValidatedChatRequest(
+                messages: request.messages,
+                multimodalMessages: request.multimodalMessages,
+                imageFiles: request.imageFiles,
+                imageIdentities: request.imageIdentities,
+                tools: request.tools,
+                stream: request.stream,
+                includeUsage: request.includeUsage,
+                generationConfig: request.generationConfig,
+                maximumCompletionTokens: request.maximumCompletionTokens,
+                thinking: true)
+        }
+        let initial = enableThinking(try validatedFixture("opencode-1.15.11-initial.json"))
+        let continuation = enableThinking(try validatedFixture("opencode-1.15.11-tool-result.json"))
         let initialPrompt = try tokenizer.encodeToolChat(
             messages: initial.messages,
-            tools: initial.tools)
+            tools: initial.tools,
+            thinkingMode: .on)
         let assistant = continuation.messages[initial.messages.count]
         let prefix = try tokenizer.encodeToolChat(
             messages: initial.messages + [assistant],
-            tools: initial.tools)
+            tools: initial.tools,
+            thinkingMode: .on)
         let callStart = try #require(prefix.lastIndex(of: tokenizer.toolCallStartID))
         let callEnd = try #require(prefix.lastIndex(of: tokenizer.toolCallEndID))
         let generatedCall = Array(prefix[callStart...callEnd])
@@ -173,7 +188,8 @@ struct ServerPromptCacheTests {
                 reason: .toolCalls))
         let rendered = try tokenizer.encodeToolChat(
             messages: continuation.messages,
-            tools: continuation.tools)
+            tools: continuation.tools,
+            thinkingMode: .on)
 
         let match = cache.match(
             domain: domain,
@@ -189,7 +205,8 @@ struct ServerPromptCacheTests {
             cachedMessages: initial.messages,
             assistant: assistant,
             incomingMessages: continuation.messages,
-            tools: continuation.tools)
+            tools: continuation.tools,
+            thinkingMode: .on)
         #expect(cached == kvBacked.count)
         #expect(effective == kvBacked + bridge)
         #expect(bridge.first == tokenizer.toolResponseID)
