@@ -303,6 +303,20 @@ This formats messages in the same way as the Mac app. The CLI response limit
 is set with `--max-new`, which defaults to 1,024 tokens. The Mac app can
 generate until the selected context window is full.
 
+Enable Gemma 4 thinking for an instruction chat with `--thinking`:
+
+```bash
+swift run -c release TurboFieldfareCLI \
+  --model scratch/gemma4.gturbo \
+  --messages-file messages.json \
+  --thinking
+```
+
+When the model emits reasoning, the CLI prints it under **Reasoning** and the
+final response under **Answer**. Thinking uses generated tokens and context
+and can increase response time. The flag applies to chat input, not raw
+`--prompt` completion.
+
 Common generation options include `--max-context`, `--temperature`, `--top-k`,
 `--top-p`, `--repetition-penalty`, `--seed`, and repeatable `--stop` strings.
 Runtime options include `--expert-cache-slots`, `--expert-cache-policy`,
