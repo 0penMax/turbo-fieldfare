@@ -232,7 +232,28 @@ guidance must precede the conversation; guidance inserted after a user,
 assistant or tool message is rejected.
 Supported options include `temperature`, `top_p`, `top_k`,
 `repetition_penalty`, `seed`, `stop`, `max_tokens`,
-`max_completion_tokens`, and function-tool fields.
+`max_completion_tokens`, the `thinking` option, and function-tool fields.
+
+Thinking is off by default. Set `"thinking": true` to enable Gemma 4's
+thought channel. When enabled, the response keeps generated reasoning separate
+from the final answer: non-streaming responses put it in
+`choices[0].message.reasoning`, while the answer remains in
+`choices[0].message.content`. Streaming responses use `choices[0].delta.reasoning`
+for reasoning and `choices[0].delta.content` for the answer. These are
+TurboFieldfare response extensions; clients should tolerate unknown message
+and delta fields. Usage counts include all generated tokens, including
+reasoning. Thinking can increase response time and context use. The server
+does not promise that generated reasoning is correct.
+
+Example request:
+
+```json
+{
+  "model": "gemma-4-26b-a4b-it",
+  "messages": [{"role": "user", "content": "Solve 17 × 23."}],
+  "thinking": true
+}
+```
 
 Unknown top-level request fields return HTTP 400 with `code`
 `unknown_parameter` and the field name in `param`, so a misspelled option is
