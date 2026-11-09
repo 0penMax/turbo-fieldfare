@@ -452,9 +452,9 @@ extension AppModel {
                     imageWriteFailed: lostImages > 0 ? true : nil)),
                 .turn(ConversationTurnRecord(
                     role: .assistant, at: now, text: operation.assistantText,
+                    tokens: operation.diagnostics?.generatedTokenIDs,
                     thinking: operation.reasoningText.isEmpty
                         ? nil : operation.reasoningText,
-                    tokens: operation.diagnostics?.generatedTokenIDs,
                     generatedTokens: operation.diagnostics?.generatedTokens,
                     stopReason: operation.diagnostics.map {
                         String(describing: $0.stopReason)

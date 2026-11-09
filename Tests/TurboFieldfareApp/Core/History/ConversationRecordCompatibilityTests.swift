@@ -51,7 +51,7 @@ import TurboFieldfare
     @Test func assistantThinkingRoundTripsAsOptionalDisplayText() throws {
         let record = TranscriptRecord.turn(ConversationTurnRecord(
             role: .assistant, at: Date(timeIntervalSince1970: 1),
-            text: "answer", thinking: "reasoning", tokens: [1, 2]))
+            text: "answer", tokens: [1, 2], thinking: "reasoning"))
         let data = try Self.encoder().encode(record)
         let decoded = try Self.decoder().decode(TranscriptRecord.self, from: data)
 

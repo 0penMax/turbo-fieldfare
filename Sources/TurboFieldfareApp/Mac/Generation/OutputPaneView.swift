@@ -69,7 +69,6 @@ struct OutputPaneView: View {
                             .padding(8)
                     }
                 }
-            }
             if model.showsLiveTurn && !model.reasoningText.isEmpty {
                 DisclosureGroup("Thinking", isExpanded: $isThinkingExpanded) {
                     Text(model.reasoningText)
@@ -85,7 +84,7 @@ struct OutputPaneView: View {
             }
             ForEach(model.transcriptHistory.indices, id: \.self) { index in
                 if let thinking = model.transcriptHistory[index].assistant.thinking {
-                    DisclosureGroup("Thinking · (index + 1)") {
+                    DisclosureGroup("Thinking · \(index + 1)") {
                         Text(thinking)
                             .textSelection(.enabled)
                             .font(.callout)
