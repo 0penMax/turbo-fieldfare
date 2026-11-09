@@ -62,6 +62,20 @@ struct ChatTemplateTests {
         #expect(tok.encode(rendered, addBOS: false) == tok.encode(expected, addBOS: false))
     }
 
+    @Test("Thinking mode combines the control token with existing system content")
+    func thinkingModePreservesExistingSystemTurn() throws {
+        let rendered = try tok.applyChatTemplate([
+            Message(role: .system, content: "Be terse."),
+            Message(role: .user, content: "Hi"),
+        ], thinkingMode: .on)
+        let expected = "<bos><|turn>system\n<|think|>\nBe terse.<turn|>\n"
+            + "<|turn>user\nHi<turn|>\n<|turn>model\n"
+        #expect(rendered == expected)
+        #expect(rendered.components(separatedBy: "<|turn>system\n").count - 1 == 1)
+        #expect(rendered.range(of: "Be terse.")!.lowerBound
+                < rendered.range(of: "<|turn>user\n")!.lowerBound)
+    }
+
     @Test("Multi-turn closes prior turns and leaves assistant open")
     func multiTurn() throws {
         let p = try tok.applyChatTemplate([
