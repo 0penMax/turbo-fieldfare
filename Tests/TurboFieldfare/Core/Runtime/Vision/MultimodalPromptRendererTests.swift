@@ -22,6 +22,28 @@ import Testing
         #expect(input.effectiveTokenIDs.starts(with: prefix))
     }
 
+    @Test func thinkingModePreservesMultimodalImagePlacement() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let context = try MetalContext()
+        let id = UUID()
+        let input = try MultimodalPromptRenderer.render(
+            messages: [MultimodalMessage(
+                role: .user, content: [.text("Describe"), .image(id: id)])],
+            featuresByID: [id: try features(rows: 2, context: context)],
+            tokenizer: tokenizer,
+            thinkingMode: .on)
+        let expectedPrefix = tokenizer.encode(
+            "<bos><|turn>system\n<|think|><turn|>\n<|turn>user\nDescribe",
+            addBOS: false)
+        #expect(input.effectiveTokenIDs.starts(with: expectedPrefix))
+        #expect(input.imageSpans.count == 1)
+        let span = try #require(input.imageSpans.first)
+        #expect(input.effectiveTokenIDs[span.tokenRange.lowerBound - 1]
+                == MultimodalPromptRenderer.beginImageTokenID)
+        #expect(input.effectiveTokenIDs[span.tokenRange.upperBound]
+                == MultimodalPromptRenderer.endImageTokenID)
+    }
+
     @Test func expandsImagesInContentOrderAndZerosEmbeddingRows() async throws {
         let tokenizer = try await GFTokenizer.load()
         let context = try MetalContext()
