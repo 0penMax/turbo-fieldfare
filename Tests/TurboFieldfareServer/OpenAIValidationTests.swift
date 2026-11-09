@@ -894,6 +894,21 @@ struct GemmaToolCallTests {
         #expect(try decoder.consumeTail("final-but-no-newline").isEmpty)
     }
 
+    @Test func thinkingTailKeepsUnresolvedLabelsHiddenAndUnknownChannelsSeparate() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .on)
+        #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
+        #expect(try decoder.consumeTail("analysis-without-newline").isEmpty)
+
+        #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
+        #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "unknown\n").isEmpty)
+        #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "private text") == [
+            .reasoning("private text"),
+        ])
+        #expect(try decoder.consumeTail(" tail") == [.reasoning(" tail")])
+    }
+
     @Test func heldBytesBeforeChannelMarkerStayInTheirChannel() async throws {
         // Thought text ending in a byte-fallback character right before
         // <channel|> must not leak into the visible answer. The barrier
@@ -902,7 +917,8 @@ struct GemmaToolCallTests {
         let tokenizer = try await GFTokenizer.load()
         var detok = GFDetokenizer(tokenizer: tokenizer,
                                   barrierTokenIDs: tokenizer.structuralMarkerIDs)
-        let decoder = StructuredAssistantDecoder(tokenizer: tokenizer, allowedTools: [])
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .on)
         var events: [StructuredAssistantEvent] = []
         func feed(_ id: Int32) throws {
             events += try decoder.consume(tokenID: id, delta: detok.push(id))
@@ -921,7 +937,12 @@ struct GemmaToolCallTests {
             if case .content(let text) = event { return text }
             return nil
         }.joined()
+        let reasoning = events.compactMap { event -> String? in
+            if case .reasoning(let text) = event { return text }
+            return nil
+        }.joined()
         #expect(visible == "ok", "thought-channel bytes leaked: '\(visible)'")
+        #expect(reasoning == "😀", "thought-channel bytes were lost or split: '\(reasoning)'")
     }
 
     @Test func tailAfterFailureThrows() async throws {
