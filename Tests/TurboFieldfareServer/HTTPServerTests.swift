@@ -369,6 +369,9 @@ struct HTTPServerTests {
         let message = try #require(choices[0]["message"] as? [String: Any])
         #expect(message["content"] as? String == "The answer is 42.")
         #expect(message["reasoning"] as? String == "check the details")
+        let usage = try #require(object["usage"] as? [String: Any])
+        #expect(usage["completion_tokens"] as? Int == 8)
+        #expect(usage["total_tokens"] as? Int == 11)
         try await server.shutdown()
     }
 
