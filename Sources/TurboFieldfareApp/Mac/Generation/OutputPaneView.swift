@@ -7,6 +7,7 @@ import SwiftUI
 struct OutputPaneView: View {
     let model: AppModel
     @StoredState private var responseCopyFeedbackID: UUID?
+    @StoredState private var isThinkingExpanded = false
 
     var body: some View {
         Group {
@@ -39,36 +40,52 @@ struct OutputPaneView: View {
     }
 
     private var transcript: some View {
-        IncrementalTranscriptView(
-            typography: ConversationTypography(model.textSize),
-            history: model.transcriptHistory,
-            contextBreak: model.transcriptContextBreak,
-            conversationEpoch: model.displayedTranscriptID,
-            lastAnswer: model.outputResponsePlainText,
-            conversationPlainText: model.outputConversationPlainText,
-            requestNewChat: model.isTurnInFlight ? nil : { model.newChat() },
-            // Blank while a stored copy is on screen. The live fields hold the
-            // chat the KV is still keeping, which is a different conversation
-            // from the one being read, and drawing it here would append one
-            // chat's newest exchange to another's transcript.
-            prompt: model.showsLiveTurn ? model.outputPromptText : "",
-            images: model.showsLiveTurn ? model.outputImageAttachments : [],
-            output: model.showsLiveTurn ? model.outputText : "",
-            mailbox: model.showsLiveTurn ? model.generationTranscriptMailbox : nil,
-            // Include replay, but not a queued send still displaying the old answer.
-            isTerminal: !model.isTranscriptTurnInFlight,
-            showsPrefillPlaceholder: model.isTranscriptTurnInFlight
-                && model.outputResponsePlainText.isEmpty,
-            runIdentity: model.runIdentity)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .topTrailing) {
-                if !model.isRunning && !model.outputResponsePlainText.isEmpty {
-                    copyResponseButton
-                        .padding(8)
+        VStack(alignment: .leading, spacing: 12) {
+            IncrementalTranscriptView(
+                typography: ConversationTypography(model.textSize),
+                history: model.transcriptHistory,
+                contextBreak: model.transcriptContextBreak,
+                conversationEpoch: model.displayedTranscriptID,
+                lastAnswer: model.outputResponsePlainText,
+                conversationPlainText: model.outputConversationPlainText,
+                requestNewChat: model.isTurnInFlight ? nil : { model.newChat() },
+                // Blank while a stored copy is on screen. The live fields hold the
+                // chat the KV is still keeping, which is a different conversation
+                // from the one being read, and drawing it here would append one
+                // chat's newest exchange to another's transcript.
+                prompt: model.showsLiveTurn ? model.outputPromptText : "",
+                images: model.showsLiveTurn ? model.outputImageAttachments : [],
+                output: model.showsLiveTurn ? model.outputText : "",
+                mailbox: model.showsLiveTurn ? model.generationTranscriptMailbox : nil,
+                // Include replay, but not a queued send still displaying the old answer.
+                isTerminal: !model.isTranscriptTurnInFlight,
+                showsPrefillPlaceholder: model.isTranscriptTurnInFlight
+                    && model.outputResponsePlainText.isEmpty,
+                runIdentity: model.runIdentity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .topTrailing) {
+                    if !model.isRunning && !model.outputResponsePlainText.isEmpty {
+                        copyResponseButton
+                            .padding(8)
+                    }
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
+            if model.showsLiveTurn && !model.reasoningText.isEmpty {
+                DisclosureGroup("Thinking", isExpanded: $isThinkingExpanded) {
+                    Text(model.reasoningText)
+                        .textSelection(.enabled)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 6)
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("transcript.thinking")
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 
     private var copyResponseButton: some View {
