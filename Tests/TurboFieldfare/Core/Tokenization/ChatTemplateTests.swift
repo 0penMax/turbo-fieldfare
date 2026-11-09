@@ -25,7 +25,7 @@ struct ChatTemplateTests {
         let expected = "<bos>" + instructions.prefix(count).map {
             "<|turn>system\n" + $0.trimmingCharacters(in: .whitespacesAndNewlines) + "<turn|>\n"
         }.joined() + "<|turn>user\nHi<turn|>\n<|turn>model\n<|channel>thought\n<channel|>"
-        let rendered = try tok.applyChatTemplate(messages)
+        let rendered = try tok.applyChatTemplate(messages, thinkingMode: .off)
         #expect(rendered == expected)
         #expect(tok.encode(rendered, addBOS: false) == tok.encode(expected, addBOS: false))
     }
@@ -43,7 +43,8 @@ struct ChatTemplateTests {
 
     @Test("Single user turn has the documented marker structure")
     func singleUserTurn() throws {
-        let p = try tok.applyChatTemplate([Message(role: .user, content: "Hi")])
+        let p = try tok.applyChatTemplate(
+            [Message(role: .user, content: "Hi")], thinkingMode: .off)
         #expect(p.hasPrefix("<bos>"))
         #expect(p.contains("<|turn>user\nHi<turn|>\n"))
         #expect(p.hasSuffix("<|turn>model\n<|channel>thought\n<channel|>"))
@@ -107,7 +108,8 @@ struct ChatTemplateTests {
 
     @Test("Single-turn token IDs match the pinned upstream template")
     func tokenIDsMatchPinnedUpstream() throws {
-        let prompt = try tok.applyChatTemplate([Message(role: .user, content: "Hi")])
+        let prompt = try tok.applyChatTemplate(
+            [Message(role: .user, content: "Hi")], thinkingMode: .off)
         #expect(tok.encode(prompt, addBOS: false) == [
             2, 105, 2364, 107, 10979, 106, 107, 105, 4368, 107, 100, 45518, 107, 101,
         ])
@@ -130,7 +132,7 @@ struct ChatTemplateTests {
 
     @Test("Empty messages yields BOS plus an open assistant turn")
     func emptyMessages() throws {
-        let p = try tok.applyChatTemplate([])
+        let p = try tok.applyChatTemplate([], thinkingMode: .off)
         #expect(p == "<bos><|turn>model\n<|channel>thought\n<channel|>")
     }
 }
