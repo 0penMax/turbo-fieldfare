@@ -856,7 +856,8 @@ public actor ServerModelSession: ServerInferenceBackend {
                 messages: messages,
                 featuresByID: features,
                 tokenizer: tokenizer,
-                tools: request.tools)
+                tools: request.tools,
+                thinkingMode: request.thinking ? .on : .off)
         } catch let error as MultimodalPromptRendererError {
             throw Self.clientError(for: error) ?? error
         }
@@ -1141,9 +1142,11 @@ public actor ServerModelSession: ServerInferenceBackend {
         if usesToolTemplate(request) {
             promptIDs = try tokenizer.encodeToolChat(
                 messages: request.messages,
-                tools: request.tools)
+                tools: request.tools,
+                thinkingMode: request.thinking ? .on : .off)
         } else {
-            let rendered = try tokenizer.applyChatTemplate(request.messages)
+            let rendered = try tokenizer.applyChatTemplate(
+                request.messages, thinkingMode: request.thinking ? .on : .off)
             promptIDs = tokenizer.encode(rendered, addBOS: false)
         }
         guard promptIDs.count < maxContext else {
