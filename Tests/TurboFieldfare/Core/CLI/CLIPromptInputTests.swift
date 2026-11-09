@@ -17,6 +17,17 @@ import TurboFieldfare
         return url
     }
 
+    @Test func rawPromptRemainsRawCompletionInput() throws {
+        let args = try Args.parse([
+            "--model", "m.gturbo", "--prompt", "<|turn>literal raw prompt",
+        ])
+        guard case .raw(let text) = try parseInput(args: args) else {
+            Issue.record("--prompt should select raw completion input")
+            return
+        }
+        #expect(text == "<|turn>literal raw prompt")
+    }
+
     /// A relative `image_file` belongs to the messages file's directory. The old
     /// code branched on `URL(fileURLWithPath:).path`, which resolves against the
     /// *process* directory and is therefore always absolute — so the relative
