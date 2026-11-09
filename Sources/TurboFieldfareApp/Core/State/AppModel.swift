@@ -1070,7 +1070,7 @@ public final class AppModel {
     /// Thinking changes the prompt prefix, so an existing token lineage must
     /// keep the policy it started with. Start a new chat before changing it.
     public var canChangeThinkingMode: Bool {
-        conversation.isEmpty && !isTurnInFlight
+        conversation.isEmpty && screen.document == nil && !isTurnInFlight
     }
 
     public func setExpertCacheSlots(_ slots: Int) {

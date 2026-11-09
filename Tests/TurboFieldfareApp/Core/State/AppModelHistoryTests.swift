@@ -27,6 +27,25 @@ import TurboFieldfare
     }
 
     @MainActor
+    @Test func thinkingModeCannotChangeWhileRestoredChatIsSelected() async throws {
+        let (model, root) = try await readyModel(FakeInferenceClient(eventDelay: .milliseconds(1)))
+        defer { try? FileManager.default.removeItem(at: root) }
+        model.promptText = "saved exchange"
+        model.send()
+        try await finish(model)
+        let id = try #require(model.storedConversationID)
+
+        model.newChat()
+        #expect(model.canChangeThinkingMode)
+        model.openConversation(id: id)
+        try await waitUntil { await model.screen.document?.id == id }
+
+        #expect(!model.canChangeThinkingMode)
+        model.setThinkingEnabled(true)
+        #expect(!model.thinkingEnabled)
+    }
+
+    @MainActor
     @Test func queuedSendKeepsTheCompletedAnswerTerminal() async throws {
         let client = FakeInferenceClient(eventDelay: .milliseconds(1))
         let (model, root) = try await readyModel(client)
