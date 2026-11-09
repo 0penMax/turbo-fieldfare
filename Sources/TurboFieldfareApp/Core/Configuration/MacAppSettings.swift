@@ -29,6 +29,7 @@ struct MacAppSettings: Codable, Equatable, Sendable {
     var inspectorVisible: Bool = true
     var visionResidencyPolicy: VisionResidencyPolicy = .onDemand
     var rdadvisePolicy: AppRDAdvicePolicy = .off
+    var thinkingEnabled: Bool = false
     var loadModelOnLaunch: Bool = false
 
     private enum CodingKeys: String, CodingKey {
@@ -50,6 +51,7 @@ struct MacAppSettings: Codable, Equatable, Sendable {
         case inspectorVisible
         case visionResidencyPolicy
         case rdadvisePolicy
+        case thinkingEnabled
         case loadModelOnLaunch
     }
 
@@ -71,6 +73,7 @@ struct MacAppSettings: Codable, Equatable, Sendable {
          inspectorVisible: Bool = true,
          visionResidencyPolicy: VisionResidencyPolicy = .onDemand,
          rdadvisePolicy: AppRDAdvicePolicy = .off,
+         thinkingEnabled: Bool = false,
          loadModelOnLaunch: Bool = false) {
         self.version = version
         self.selectedModelPath = selectedModelPath
@@ -90,6 +93,7 @@ struct MacAppSettings: Codable, Equatable, Sendable {
         self.inspectorVisible = inspectorVisible
         self.visionResidencyPolicy = visionResidencyPolicy
         self.rdadvisePolicy = rdadvisePolicy
+        self.thinkingEnabled = thinkingEnabled
         self.loadModelOnLaunch = loadModelOnLaunch
     }
 
@@ -139,6 +143,9 @@ struct MacAppSettings: Codable, Equatable, Sendable {
         rdadvisePolicy = try container.decodeIfPresent(
             AppRDAdvicePolicy.self,
             forKey: .rdadvisePolicy) ?? .off
+        thinkingEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .thinkingEnabled) ?? false
         loadModelOnLaunch = try container.decodeIfPresent(
             Bool.self,
             forKey: .loadModelOnLaunch) ?? false

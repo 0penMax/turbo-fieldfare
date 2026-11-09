@@ -558,6 +558,24 @@ import Testing
         #expect(decoded == initial)
     }
 
+    @Test func thinkingSettingDefaultsOffAndRoundTrips() throws {
+        let defaults = MacAppSettings()
+        #expect(!defaults.thinkingEnabled)
+
+        var object = try #require(JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(defaults)) as? [String: Any])
+        object.removeValue(forKey: "thinkingEnabled")
+        let olderSettingsData = try JSONSerialization.data(withJSONObject: object)
+        let migrated = try JSONDecoder().decode(
+            MacAppSettings.self, from: olderSettingsData)
+        #expect(!migrated.thinkingEnabled)
+
+        let enabled = MacAppSettings(thinkingEnabled: true)
+        let decoded = try JSONDecoder().decode(
+            MacAppSettings.self, from: JSONEncoder().encode(enabled))
+        #expect(decoded.thinkingEnabled)
+    }
+
     @MainActor
     @Test func changingModelDirectoryStillReleasesTheImageTower() async throws {
         let root = try makeTemporaryRoot()
