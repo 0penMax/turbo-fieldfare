@@ -12,6 +12,13 @@ public final class AppModel {
         case running
     }
 
+    public enum GenerationTimingState: Equatable {
+        case running
+        case completed
+        case stopped
+        case failed
+    }
+
     /// How a turn ended.
     ///
     /// `committed` covers a reply that finished and a stop that landed at a
@@ -78,6 +85,14 @@ public final class AppModel {
     var serviceEpoch: UUID?
     public var outputText: String = ""
     public var reasoningText: String = ""
+    public private(set) var generationStartedAt: Date?
+    public private(set) var generationFinishedAt: Date?
+    public private(set) var generationTimingState: GenerationTimingState?
+
+    public func generationElapsedSeconds(at date: Date = Date()) -> TimeInterval? {
+        guard let generationStartedAt else { return nil }
+        return max(0, (generationFinishedAt ?? date).timeIntervalSince(generationStartedAt))
+    }
     public var runState: RunState = .idle
     public var runtimeOptions = AppRuntimeOptions()
     public var maxNewTokensOverride: Int?
@@ -2441,6 +2456,9 @@ public final class AppModel {
         // stayed on disk until the app quit.
         clearImages()
         conversation.startNew()
+        generationStartedAt = nil
+        generationFinishedAt = nil
+        generationTimingState = nil
         outputPromptText = ""
         outputText = ""
         reasoningText = ""
@@ -2612,6 +2630,7 @@ public final class AppModel {
             // transcript had not changed — which is what made a second Generate
             // the obvious thing to press.
             runIdentity &+= 1
+            beginGenerationTimer()
             generationTranscriptMailbox?.reset()
             outputPromptText = turn.prompt
             outputImageAttachments = turn.images.map(ChatImage.staged)
@@ -2682,6 +2701,7 @@ public final class AppModel {
         persistSettings()
         generationTranscriptMailbox?.reset()
         runIdentity &+= 1
+        beginGenerationTimer()
         let generation = runIdentity
         outputPromptText = request.prompt
         // Not released: every turn of a conversation keeps its own images for
@@ -2934,6 +2954,7 @@ public final class AppModel {
         hasHandledTerminalEvent = true
         materializeServiceTranscript()
         self.diagnostics = diagnostics
+        endGenerationTimer(as: diagnostics.stopReason == .cancelled ? .stopped : .completed)
         let userText = outputPromptText
         let assistantText = outputText
         conversation.completeTurn(
@@ -2957,6 +2978,7 @@ public final class AppModel {
         materializeServiceTranscript()
         self.diagnostics = diagnostics
         error = .cancelled
+        endGenerationTimer(as: .stopped)
         // A `.cancelled` event means the run threw `CancellationError`, and the
         // conversation rewound the turn: its tokens are not in the KV, and the
         // service did not count it either. Counting it here put the app one
@@ -2990,6 +3012,7 @@ public final class AppModel {
         guard !hasHandledTerminalEvent else { return }
         hasHandledTerminalEvent = true
         error = appError
+        endGenerationTimer(as: .failed)
         let abandoned: AppChatTurn?
         if case .conversationLineageLost = appError {
             // The transcript stays readable; nothing further can be sent until
@@ -3040,6 +3063,18 @@ public final class AppModel {
         isCancellationPending = false
         activeRunRuntimeKey = nil
         endTurnWait(generation: runIdentity)
+    }
+
+    private func beginGenerationTimer() {
+        generationStartedAt = Date()
+        generationFinishedAt = nil
+        generationTimingState = .running
+    }
+
+    private func endGenerationTimer(as state: GenerationTimingState) {
+        guard generationStartedAt != nil else { return }
+        generationFinishedAt = Date()
+        generationTimingState = state
     }
 
     /// Releases the send's last stage.

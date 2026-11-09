@@ -70,6 +70,11 @@ struct OutputPaneView: View {
                             .padding(8)
                     }
                 }
+                .overlay(alignment: .bottomLeading) {
+                    generationDurationView
+                        .padding(.leading, 8)
+                        .padding(.bottom, 8)
+                }
             if model.showsLiveTurn && !model.reasoningText.isEmpty {
                 thinkingDisclosure(
                     title: "Thinking", text: model.reasoningText,
@@ -180,6 +185,54 @@ struct OutputPaneView: View {
         .help(responseCopyFeedbackID == nil
               ? "Copy last answer"
               : "Response copied")
+    }
+
+    @ViewBuilder
+    private var generationDurationView: some View {
+        if model.showsLiveTurn,
+           let _ = model.generationStartedAt,
+           let state = model.generationTimingState {
+            if state == .running {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    durationLabel(
+                        state: state,
+                        seconds: model.generationElapsedSeconds(at: context.date) ?? 0)
+                }
+            } else if let seconds = model.generationElapsedSeconds() {
+                durationLabel(state: state, seconds: seconds)
+            }
+        }
+    }
+
+    private func durationLabel(
+        state: AppModel.GenerationTimingState,
+        seconds: TimeInterval
+    ) -> some View {
+        let title: String
+        switch state {
+        case .running: title = "Working for"
+        case .completed: title = "Generated in"
+        case .stopped: title = "Stopped after"
+        case .failed: title = "Ended after"
+        }
+        return Label("\(title) \(formattedDuration(seconds))", systemImage: "clock")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(.regularMaterial, in: Capsule())
+            .accessibilityIdentifier("transcript.generationDuration")
+    }
+
+    private func formattedDuration(_ seconds: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(seconds))
+        let hours = totalSeconds / 3_600
+        let minutes = totalSeconds % 3_600 / 60
+        let remainder = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, remainder)
+        }
+        return String(format: "%d:%02d", minutes, remainder)
     }
 
     private var emptyPlaceholderContent: some View {

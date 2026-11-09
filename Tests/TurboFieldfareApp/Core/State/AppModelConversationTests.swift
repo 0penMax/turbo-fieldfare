@@ -65,6 +65,26 @@ import Testing
     }
 
     @MainActor
+    @Test func generationDurationRunsLiveAndFreezesOnCompletion() async throws {
+        let client = FakeInferenceClient(eventDelay: .milliseconds(1))
+        let model = try await readyModel(client)
+        model.promptText = "time this answer"
+        model.send()
+
+        await SendWaiting.generationStarts(model)
+        #expect(model.generationTimingState == .running)
+        #expect(model.generationElapsedSeconds() != nil)
+
+        await finish(model)
+
+        let startedAt = try #require(model.generationStartedAt)
+        let finishedAt = try #require(model.generationFinishedAt)
+        #expect(model.generationTimingState == .completed)
+        #expect(model.generationElapsedSeconds(at: finishedAt.addingTimeInterval(10))
+            == finishedAt.timeIntervalSince(startedAt))
+    }
+
+    @MainActor
     @Test func thinkingModeCannotChangeAfterConversationStarts() async throws {
         let client = FakeInferenceClient(eventDelay: .milliseconds(1))
         let model = try await readyModel(client)
