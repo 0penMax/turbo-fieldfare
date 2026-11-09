@@ -1,6 +1,7 @@
 import Foundation
 
 public enum StructuredAssistantEvent: Equatable, Sendable {
+    case reasoning(String)
     case content(String)
     case toolCall(ParsedToolCall)
 }

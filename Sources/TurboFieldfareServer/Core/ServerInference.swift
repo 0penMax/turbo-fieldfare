@@ -1019,6 +1019,8 @@ public actor ServerModelSession: ServerInferenceBackend {
                     func handle(_ events: [StructuredAssistantEvent]) {
                         for event in events {
                             switch event {
+                            case .reasoning:
+                                break
                             case .content(let text):
                                 let visible = stopMatcher.push(text)
                                 if !visible.isEmpty {
