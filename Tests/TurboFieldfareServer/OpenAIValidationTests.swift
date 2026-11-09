@@ -842,6 +842,21 @@ struct GemmaToolCallTests {
         ])
     }
 
+    @Test func thinkingModeEmitsReasoningSeparatelyFromAnswer() async throws {
+        let tokenizer = try await GFTokenizer.load()
+        let decoder = StructuredAssistantDecoder(
+            tokenizer: tokenizer, allowedTools: [], thinkingMode: .on)
+        #expect(try decoder.consume(tokenID: tokenizer.channelStartID, delta: "").isEmpty)
+        #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "thought\n").isEmpty)
+        #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "private steps") == [
+            .reasoning("private steps"),
+        ])
+        #expect(try decoder.consume(tokenID: tokenizer.channelEndID, delta: "").isEmpty)
+        #expect(try decoder.consume(tokenID: tokenizer.bosID, delta: "final answer") == [
+            .content("final answer"),
+        ])
+    }
+
     @Test func routesControlTokenDeltaThroughCurrentChannel() async throws {
         // A non-empty delta on a control token is text the detokenizer held
         // back from before that token; it belongs to the channel in effect
