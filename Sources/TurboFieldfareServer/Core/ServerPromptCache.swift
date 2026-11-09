@@ -30,6 +30,7 @@ struct ServerPromptCacheEntry: Sendable, Equatable {
     /// would compare equal without this.
     let inputImageIdentities: [[String]]
     let tools: [GFTokenizer.FunctionDefinition]
+    let thinking: Bool
     let assistantTurn: CachedAssistantTurn
     let kvBackedTokenIDs: [Int32]
     let uncommittedBoundaryTokenIDs: [Int32]
@@ -43,6 +44,7 @@ enum ServerPromptCacheMissReason: String, Sendable, Equatable, CaseIterable {
     case noEntry = "no-entry"
     case domainChanged = "domain-changed"
     case toolsChanged = "tools-changed"
+    case thinkingModeChanged = "thinking-mode-changed"
     case unusableEntry = "unusable-entry"
     case historyDiverged = "history-diverged"
     case unsupportedContinuation = "unsupported-continuation"
@@ -149,6 +151,7 @@ struct ServerPromptCache: Sendable {
             inputMessages: request.messages,
             inputImageIdentities: identities,
             tools: request.tools,
+            thinking: request.thinking,
             assistantTurn: CachedAssistantTurn(
                 message: assistant,
                 rawStopReason: result.reason),
@@ -169,6 +172,9 @@ struct ServerPromptCache: Sendable {
     ) -> ServerPromptCacheMatch {
         guard let entry else { return .miss(.noEntry) }
         guard entry.domain == domain else { return .miss(.domainChanged) }
+        guard entry.thinking == request.thinking else {
+            return .miss(.thinkingModeChanged)
+        }
         guard entry.tools == request.tools else { return .miss(.toolsChanged) }
         guard entry.kvPosition == entry.kvBackedTokenIDs.count,
               entry.kvPosition > 0,

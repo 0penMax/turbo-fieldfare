@@ -131,6 +131,10 @@ struct ServerPromptCacheTests {
         let changedTools = request(messages: initial.messages, tools: tools)
         #expect(cache.match(domain: domain, request: changedTools, renderedPromptIDs: prefix + [4],
                             tokenizer: tokenizer).missReason == .toolsChanged)
+        let changedThinking = request(messages: initial.messages, thinking: true)
+        #expect(cache.match(domain: domain, request: changedThinking,
+                            renderedPromptIDs: prefix + [4], tokenizer: tokenizer)
+            .missReason == .thinkingModeChanged)
         #expect(cache.match(domain: domain, request: initial, renderedPromptIDs: prefix + [4],
                             tokenizer: tokenizer) == .hit(effectivePromptIDs: prefix + [4], cachedPromptTokens: 2))
     }
@@ -864,7 +868,8 @@ struct ServerPromptCacheTests {
     private func request(
         messages: [GFTokenizer.Message],
         tools: [GFTokenizer.FunctionDefinition] = [],
-        imageIdentities: [[String]] = []
+        imageIdentities: [[String]] = [],
+        thinking: Bool = false
     ) -> ValidatedChatRequest {
         ValidatedChatRequest(
             messages: messages,
@@ -873,7 +878,8 @@ struct ServerPromptCacheTests {
             stream: false,
             includeUsage: false,
             generationConfig: GenerationConfig(maxNewTokens: 16, temperature: 0),
-            maximumCompletionTokens: 16)
+            maximumCompletionTokens: 16,
+            thinking: thinking)
     }
 
     private func rawResult(
