@@ -77,4 +77,35 @@ import Testing
         #expect(model.liveTokenCount == 2)
         #expect(model.error == .cancelled)
     }
+
+    @MainActor
+    @Test func reasoningOnlyPartialSurvivesCancellationAndFailure() {
+        let stopped = AppModel()
+        _ = stopped.conversation.beginTurn(text: "question")
+        stopped.apply(.reasoning(AppTokenEvent(
+            index: 0, textDelta: "stopped thought", elapsedDecodeSeconds: 0.2)))
+        stopped.apply(.finished(AppDiagnostics(
+            generatedTokens: 1, stopReason: .cancelled,
+            timeToFirstTokenSeconds: nil, decodeSeconds: 0.2, tokensPerSecond: 5,
+            peakMemoryBytes: nil, runtimeOptions: AppRuntimeOptions())))
+        #expect(stopped.reasoningText == "stopped thought")
+        #expect(stopped.outputText.isEmpty)
+
+        let cancelled = AppModel()
+        cancelled.apply(.reasoning(AppTokenEvent(
+            index: 0, textDelta: "unfinished thought", elapsedDecodeSeconds: 0.2)))
+        cancelled.apply(.cancelled(AppDiagnostics(
+            generatedTokens: 1, stopReason: .cancelled,
+            timeToFirstTokenSeconds: nil, decodeSeconds: 0.2, tokensPerSecond: 5,
+            peakMemoryBytes: nil, runtimeOptions: AppRuntimeOptions())))
+        #expect(cancelled.reasoningText == "unfinished thought")
+        #expect(cancelled.outputText.isEmpty)
+
+        let failed = AppModel()
+        failed.apply(.reasoning(AppTokenEvent(
+            index: 0, textDelta: "partial", elapsedDecodeSeconds: 0.1)))
+        failed.apply(.failed(.unknown("decode failed"), partial: nil))
+        #expect(failed.reasoningText == "partial")
+        #expect(failed.outputText.isEmpty)
+    }
 }
