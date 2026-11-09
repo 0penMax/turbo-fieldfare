@@ -179,4 +179,18 @@ import TurboFieldfareDecodeProtocol
             temperature: 0).thinkingMode == .off)
     }
 
+    @Test func generationRequestWithoutThinkingFieldDefaultsOff() throws {
+        let request = DecodeGenerationRequest(
+            prompt: "hello", maxNewTokens: 16, maxContextTokens: 4096,
+            temperature: 0)
+        var object = try #require(JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(request)) as? [String: Any])
+        object.removeValue(forKey: "thinkingMode")
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(DecodeGenerationRequest.self, from: legacyData)
+
+        #expect(decoded.thinkingMode == .off)
+    }
+
 }

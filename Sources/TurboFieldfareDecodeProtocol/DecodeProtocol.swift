@@ -48,7 +48,6 @@ public struct DecodeLoadRequest: Codable, Sendable {
     public var modelPath: String
     public var maxContextTokens: Int
     public var runtimeOptions: DecodeRuntimeOptions
-    public var thinkingMode: ThinkingMode
     public var forceLogitsHead: Bool
     public var requestID: UUID
 
@@ -65,6 +64,11 @@ public struct DecodeLoadRequest: Codable, Sendable {
 }
 
 public struct DecodeGenerationRequest: Codable, Sendable {
+    private enum CodingKeys: String, CodingKey {
+        case prompt, imageAttachments, maxNewTokens, maxContextTokens, temperature
+        case topK, topP, repetitionPenalty, runtimeOptions, thinkingMode
+        case generationID, conversationEpoch, turnIndex
+    }
     /// One user turn, never a rendered transcript. In conversation mode the
     /// service appends exactly this onto the retained KV; re-rendering history
     /// here would destabilise the token prefix the cache is built on.
@@ -82,6 +86,7 @@ public struct DecodeGenerationRequest: Codable, Sendable {
     public var topP: Float?
     public var repetitionPenalty: Float
     public var runtimeOptions: DecodeRuntimeOptions
+    public var thinkingMode: ThinkingMode
     public var generationID: UUID
     /// The conversation this turn belongs to, or nil for the one-shot path that
     /// resets the KV before prefilling.
@@ -120,6 +125,24 @@ public struct DecodeGenerationRequest: Codable, Sendable {
         self.runtimeOptions = runtimeOptions
         self.thinkingMode = thinkingMode
         self.generationID = generationID
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        prompt = try container.decode(String.self, forKey: .prompt)
+        imageAttachments = try container.decodeIfPresent(
+            [DecodeImageAttachment].self, forKey: .imageAttachments)
+        maxNewTokens = try container.decode(Int.self, forKey: .maxNewTokens)
+        maxContextTokens = try container.decode(Int.self, forKey: .maxContextTokens)
+        temperature = try container.decode(Float.self, forKey: .temperature)
+        topK = try container.decodeIfPresent(Int.self, forKey: .topK)
+        topP = try container.decodeIfPresent(Float.self, forKey: .topP)
+        repetitionPenalty = try container.decode(Float.self, forKey: .repetitionPenalty)
+        runtimeOptions = try container.decode(DecodeRuntimeOptions.self, forKey: .runtimeOptions)
+        thinkingMode = try container.decodeIfPresent(ThinkingMode.self, forKey: .thinkingMode) ?? .off
+        generationID = try container.decode(UUID.self, forKey: .generationID)
+        conversationEpoch = try container.decodeIfPresent(UUID.self, forKey: .conversationEpoch)
+        turnIndex = try container.decodeIfPresent(Int.self, forKey: .turnIndex)
     }
 }
 
