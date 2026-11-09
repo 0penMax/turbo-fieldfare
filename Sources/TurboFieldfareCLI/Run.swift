@@ -260,6 +260,31 @@ public func run(args: Args,
         }
         let effectiveMaxNew = min(args.maxNew, args.maxContext - promptIds.count)
         let config = makeConfig(maxNewTokens: effectiveMaxNew)
+        let parsesChatOutput: Bool
+        switch input {
+        case .raw: parsesChatOutput = false
+        case .messages, .multimodal: parsesChatOutput = true
+        }
+        let structuredDecoder = parsesChatOutput
+            ? StructuredAssistantDecoder(
+                tokenizer: tokenizer,
+                allowedTools: [],
+                thinkingMode: args.thinkingMode)
+            : nil
+        var outputRouter = CLIOutputRouter(thinkingMode: args.thinkingMode)
+        var structuredError: Error?
+
+        func write(_ events: [StructuredAssistantEvent]) {
+            for event in events {
+                switch event {
+                case .reasoning, .content:
+                    let text = outputRouter.output(for: event)
+                    if !text.isEmpty { stdout.write(Data(text.utf8)) }
+                case .toolCall(let call):
+                    structuredError = GemmaToolCallParserError.unknownTool(call.name)
+                }
+            }
+        }
 
         let stats = try await runRawCompletion(
             producer: runner,
@@ -270,15 +295,31 @@ public func run(args: Args,
             context: context,
             scratch: scratch,
             prefillConfig: runtime.prefillConfig) { progress in
+                guard structuredError == nil else { return }
                 switch progress {
                 case .prefill:
                     break
-                case .token(_, _, let delta):
-                    if !delta.isEmpty { stdout.write(Data(delta.utf8)) }
+                case .token(_, let tokenID, let delta):
+                    if let structuredDecoder {
+                        do {
+                            write(try structuredDecoder.consume(tokenID: tokenID, delta: delta))
+                        } catch {
+                            structuredError = error
+                        }
+                    } else if !delta.isEmpty {
+                        stdout.write(Data(delta.utf8))
+                    }
                 case .tail(let tail):
-                    stdout.write(Data(tail.utf8))
+                    if let structuredDecoder {
+                        do { write(try structuredDecoder.consumeTail(tail)) }
+                        catch { structuredError = error }
+                    } else {
+                        stdout.write(Data(tail.utf8))
+                    }
                 }
             }
+        if let structuredError { throw structuredError }
+        try structuredDecoder?.finish()
 
         if !args.quiet {
             let tokensPerSecond = stats.decodeSeconds > 0
@@ -299,6 +340,30 @@ public func run(args: Args,
         return RunResult(exitCode: 130)
     } catch {
         return errored(stderr, "\(error)", 1)
+    }
+}
+
+struct CLIOutputRouter {
+    let thinkingMode: ThinkingMode
+    private var emittedReasoning = false
+    private var emittedAnswer = false
+
+    mutating func output(for event: StructuredAssistantEvent) -> String {
+        switch event {
+        case .reasoning(let text):
+            guard thinkingMode == .on else { return "" }
+            let prefix = emittedReasoning ? "" : "\n[Reasoning]\n"
+            emittedReasoning = true
+            return prefix + text
+        case .content(let text):
+            let prefix = thinkingMode == .on && emittedReasoning && !emittedAnswer
+                ? "\n\n[Answer]\n"
+                : ""
+            emittedAnswer = true
+            return prefix + text
+        case .toolCall:
+            return ""
+        }
     }
 }
 
