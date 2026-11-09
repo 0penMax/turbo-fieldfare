@@ -324,28 +324,42 @@ public struct GFTokenizer: @unchecked Sendable {
     }
 
     /// Text-only, no-tool rendering of the pinned IT checkpoint's bundled
-    /// `chat_template.jinja`, with thinking disabled. Keeping this narrow makes
-    /// unsupported tool/media behavior explicit instead of approximating it.
+    /// `chat_template.jinja`. Keeping this narrow makes unsupported tool/media
+    /// behavior explicit instead of approximating it.
     private static let turnOpen    = "<|turn>"
     private static let turnClose   = "<turn|>"
     private static let bosMark     = "<bos>"
 
-    public func applyChatTemplate(_ messages: [Message]) throws -> String {
+    public func applyChatTemplate(
+        _ messages: [Message],
+        thinkingMode: ThinkingMode = .off
+    ) throws -> String {
+        var renderedMessages = messages
+        if thinkingMode == .on, renderedMessages.first?.role != .system {
+            renderedMessages.insert(Message(role: .system, content: ""), at: 0)
+        }
+
         var s = Self.bosMark
         var sawConversation = false
-        for message in messages {
+        for message in renderedMessages {
             guard let rawContent = message.content else {
                 throw GFTokenizerError.invalidChatTemplate("text-only messages require content")
             }
-            let content = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            var content = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
             if message.role == .system && sawConversation {
                 throw GFTokenizerError.invalidChatTemplate("system messages must precede conversation")
             }
             if message.role != .system { sawConversation = true }
+            if thinkingMode == .on, message.role == .system {
+                content = content.isEmpty ? "<|think|>" : "<|think|>\n" + content
+            }
             let role = message.role == .assistant ? "model" : message.role.rawValue
             s += Self.turnOpen + role + "\n" + content + Self.turnClose + "\n"
         }
-        s += Self.turnOpen + "model\n<|channel>thought\n<channel|>"
+        s += Self.turnOpen + "model\n"
+        if thinkingMode == .off {
+            s += "<|channel>thought\n<channel|>"
+        }
         return s
     }
 
