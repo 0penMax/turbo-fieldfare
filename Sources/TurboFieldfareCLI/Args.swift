@@ -357,6 +357,9 @@ extension Args {
         if messagesFile != nil, chatPrompt != nil {
             throw ArgsError.mutuallyExclusive("--chat-prompt", "--messages-file")
         }
+        if prompt != nil, thinkingMode == .on {
+            throw ArgsError.mutuallyExclusive("--prompt", "--thinking")
+        }
         if prompt != nil, !images.isEmpty {
             throw ArgsError.mutuallyExclusive("--prompt", "--image")
         }

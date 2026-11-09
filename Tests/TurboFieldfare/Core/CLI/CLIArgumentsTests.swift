@@ -277,6 +277,14 @@ import TurboFieldfare
             ])
         }
     }
+    @Test func thinkingIsRejectedForRawPrompt() {
+        #expect(throws: ArgsError.mutuallyExclusive("--prompt", "--thinking")) {
+            _ = try Args.parse([
+                "--model", "m.gturbo", "--prompt", "raw", "--thinking",
+            ])
+        }
+    }
+
     @Test func imageChatOptionsPreserveOrderAndResidency() throws {
         let a = try Args.parse([
             "--model", "m.gturbo",
