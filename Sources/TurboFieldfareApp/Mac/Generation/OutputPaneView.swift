@@ -71,12 +71,7 @@ struct OutputPaneView: View {
                 }
             if model.showsLiveTurn && !model.reasoningText.isEmpty {
                 DisclosureGroup("Thinking", isExpanded: $isThinkingExpanded) {
-                    Text(model.reasoningText)
-                        .textSelection(.enabled)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 6)
+                    thinkingTextView(model.reasoningText)
                 }
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -85,12 +80,7 @@ struct OutputPaneView: View {
             ForEach(model.transcriptHistory.indices, id: \.self) { index in
                 if let thinking = model.transcriptHistory[index].assistant.thinking {
                     DisclosureGroup("Thinking · \(index + 1)") {
-                        Text(thinking)
-                            .textSelection(.enabled)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 6)
+                        thinkingTextView(thinking)
                     }
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
@@ -100,6 +90,19 @@ struct OutputPaneView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
+    }
+
+    private func thinkingTextView(_ text: String) -> some View {
+        ScrollView(.vertical) {
+            Text(text)
+                .textSelection(.enabled)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 6)
+        }
+        .frame(maxHeight: 240)
+        .scrollIndicators(.visible)
     }
 
     private var copyResponseButton: some View {
