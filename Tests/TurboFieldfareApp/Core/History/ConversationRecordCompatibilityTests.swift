@@ -45,6 +45,23 @@ import TurboFieldfare
         #expect(turn.tokens == [1, 2, 3])
         #expect(turn.sampling == nil)
         #expect(turn.boundary == nil)
+        #expect(turn.thinking == nil)
+    }
+
+    @Test func assistantThinkingRoundTripsAsOptionalDisplayText() throws {
+        let record = TranscriptRecord.turn(ConversationTurnRecord(
+            role: .assistant, at: Date(timeIntervalSince1970: 1),
+            text: "answer", thinking: "reasoning", tokens: [1, 2]))
+        let data = try Self.encoder().encode(record)
+        let decoded = try Self.decoder().decode(TranscriptRecord.self, from: data)
+
+        guard case .turn(let turn) = decoded else {
+            Issue.record("the line decoded as something other than a turn")
+            return
+        }
+        #expect(turn.text == "answer")
+        #expect(turn.thinking == "reasoning")
+        #expect(turn.tokens == [1, 2])
     }
 
     /// A header written before the creation facts moved into it.

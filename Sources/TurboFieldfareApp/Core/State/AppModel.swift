@@ -2941,6 +2941,7 @@ public final class AppModel {
         // which writes nothing.
         enqueueCompletedTurnPersistence(
             userText: userText, assistantText: assistantText,
+            reasoningText: reasoningText,
             diagnostics: diagnostics)
         finishTerminalRun()
     }

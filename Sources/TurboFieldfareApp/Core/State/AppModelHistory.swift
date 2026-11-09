@@ -377,6 +377,7 @@ extension AppModel {
     /// turn that threw is written nowhere, because the runtime rewound it.
     func enqueueCompletedTurnPersistence(userText: String,
                                          assistantText: String,
+                                         reasoningText: String,
                                          diagnostics: AppDiagnostics?) {
         guard let binding = conversationBinding,
               let id = storedConversationID else { return }
@@ -388,6 +389,7 @@ extension AppModel {
             store: binding.store,
             userText: userText,
             assistantText: assistantText,
+            reasoningText: reasoningText,
             diagnostics: diagnostics,
             sampling: currentSampling(),
             boundary: ConversationBoundary(
@@ -450,6 +452,8 @@ extension AppModel {
                     imageWriteFailed: lostImages > 0 ? true : nil)),
                 .turn(ConversationTurnRecord(
                     role: .assistant, at: now, text: operation.assistantText,
+                    thinking: operation.reasoningText.isEmpty
+                        ? nil : operation.reasoningText,
                     tokens: operation.diagnostics?.generatedTokenIDs,
                     generatedTokens: operation.diagnostics?.generatedTokens,
                     stopReason: operation.diagnostics.map {
